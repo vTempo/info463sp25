@@ -1,0 +1,45 @@
+# Processing specific files
+*.class
+*.jar
+*.zip
+*.tar.gz
+*.tar
+*.tgz
+*.gz
+*.7z
+*.rar
+*.exe
+*.dll
+*.so
+*.dylib
+*.app
+*.pde~
+*.java~
+*.class~
+*.jar~
+*.zip~
+*.tar.gz~
+*.tar~
+*.tgz~
+*.gz~
+*.7z~
+*.rar~
+*.exe~
+*.dll~
+*.so~
+*.dylib~
+*.app~
+
+# Processing build folders
+build/
+out/
+bin/
+
+# Processing IDE settings
+.settings/
+.project
+.classpath
+
+# OS specific files
+.DS_Store
+Thumbs.db
