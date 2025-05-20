@@ -16,15 +16,18 @@ Map<Character, Character[]> keySuggestions = new HashMap<>();
 Character[] currentSuggestions = null;
 char lastPressedKeyChar = '\0';
 int lastPressedKeyX, lastPressedKeyY;
-int suggestionKeySize = 30;
+int suggestionKeySize = 40;
 int suggestionSpacing = 5;
 float suggestionKeySizeHoverFactor = 1.5; // How much bigger suggestions get on hover
+boolean hoverSuggestion;
 
 boolean timing = false;
 long startTime, endTime;
 
 void setup() {
   size(800, 400);
+
+  hoverSuggestion = false;
 
   // letter suggestions for each character
   keySuggestions.put('A', new Character[] {'N', 'L', 'S', 'T'});
@@ -85,12 +88,30 @@ void draw() {
   drawKey('⏎', 450, 250);
 
   if (currentSuggestions != null) {
-    drawSuggestionKeys();
+    float actualSuggestionKeySizeHover = suggestionKeySize * suggestionKeySizeHoverFactor;
+    float keyCenterX = lastPressedKeyX + keySize / 2.0f;
+    float keyCenterY = lastPressedKeyY + keySize / 2.0f;
+
+    // Calculate the bounding box that includes all keys and their hover areas
+    float minX = lastPressedKeyX - suggestionSpacing - suggestionKeySize;
+    float maxX = lastPressedKeyX + keySize + suggestionSpacing + suggestionKeySize;
+    float minY = lastPressedKeyY - suggestionSpacing - suggestionKeySize;
+    float maxY = lastPressedKeyY + keySize + suggestionSpacing + suggestionKeySize;
+
+    // Check if mouse is within the bounding box
+    boolean mouseInBounds = (mouseX >= minX && mouseX <= maxX &&
+                           mouseY >= minY && mouseY <= maxY);
+
+    if (mouseInBounds) {
+      drawSuggestionKeys();
+    } else {
+      currentSuggestions = null;
+    }
   }
 }
 
 void drawKey(char label, int x, int y) {
-  if (mouseOverKey(x, y, keySize)) {
+  if (mouseOverKey(x, y, keySize) && hoverSuggestion) {
     fill(100);
   } else {
     fill(200);
@@ -143,12 +164,13 @@ void drawSuggestionKeys() {
     float baseKeyCenterX = baseX + suggestionKeySize / 2.0f;
     float baseKeyCenterY = baseY + suggestionKeySize / 2.0f;
 
-    boolean isHovered = (mouseX >= baseKeyCenterX - actualSuggestionKeySizeHover / 2.0f &&
+    hoverSuggestion = (mouseX >= baseKeyCenterX - actualSuggestionKeySizeHover / 2.0f &&
                          mouseX <= baseKeyCenterX + actualSuggestionKeySizeHover / 2.0f &&
                          mouseY >= baseKeyCenterY - actualSuggestionKeySizeHover / 2.0f &&
                          mouseY <= baseKeyCenterY + actualSuggestionKeySizeHover / 2.0f);
 
-    if (isHovered) {
+
+    if (hoverSuggestion) {
       currentDrawSize = actualSuggestionKeySizeHover;
       drawX = baseKeyCenterX - currentDrawSize / 2.0f;
       drawY = baseKeyCenterY - currentDrawSize / 2.0f;
@@ -198,8 +220,11 @@ void mousePressed() {
                            mouseY <= baseKeyCenterY + actualSuggestionKeySizeHover / 2.0f);
 
       if (isClicked) {
-        typedText += currentSuggestions[i];
-        currentSuggestions = null;
+        char clickedChar = currentSuggestions[i];
+        typedText += clickedChar;
+        currentSuggestions = keySuggestions.get(clickedChar);
+        lastPressedKeyChar = clickedChar;
+        // Optionally, update lastPressedKeyX and lastPressedKeyY if you want the suggestions to move
         if (!timing && typedText.length() > 0) {
           startTime = millis();
           timing = true;
