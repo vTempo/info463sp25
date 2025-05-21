@@ -181,9 +181,12 @@ void drawSuggestionKeys() {
   baseXs[3] = lastPressedKeyX - suggestionSpacing - suggestionKeySize;
   baseYs[3] = keyCenterY - suggestionKeySize / 2.0f;
 
+
   for (int i = 0; i < currentSuggestions.length && i < 4; i++) {
     if (currentSuggestions[i] == null) continue;
     char suggestionChar = currentSuggestions[i];
+    // Convert suggestion character to current case
+    suggestionChar = isUpperCase ? Character.toUpperCase(suggestionChar) : Character.toLowerCase(suggestionChar);
     float baseX = baseXs[i];
     float baseY = baseYs[i];
 
@@ -194,13 +197,12 @@ void drawSuggestionKeys() {
     float baseKeyCenterX = baseX + suggestionKeySize / 2.0f;
     float baseKeyCenterY = baseY + suggestionKeySize / 2.0f;
 
-    hoverSuggestion = (mouseX >= baseKeyCenterX - actualSuggestionKeySizeHover / 2.0f &&
+    boolean isHovered = (mouseX >= baseKeyCenterX - actualSuggestionKeySizeHover / 2.0f &&
                          mouseX <= baseKeyCenterX + actualSuggestionKeySizeHover / 2.0f &&
                          mouseY >= baseKeyCenterY - actualSuggestionKeySizeHover / 2.0f &&
                          mouseY <= baseKeyCenterY + actualSuggestionKeySizeHover / 2.0f);
 
-
-    if (hoverSuggestion) {
+    if (isHovered) {
       currentDrawSize = actualSuggestionKeySizeHover;
       drawX = baseKeyCenterX - currentDrawSize / 2.0f;
       drawY = baseKeyCenterY - currentDrawSize / 2.0f;
