@@ -21,13 +21,18 @@ int suggestionSpacing = 5;
 float suggestionKeySizeHoverFactor = 1.5; // How much bigger suggestions get on hover
 boolean hoverSuggestion;
 
+// Case toggle variables
+boolean isUpperCase = false;  // Start in lowercase mode
+boolean hasEnteredToggleArea = false;  // Track if mouse has ever entered toggle area
+int caseToggleX = 650;  // Position of the case toggle button
+int caseToggleY = 200;
+int caseToggleSize = 80;
+
 boolean timing = false;
 long startTime, endTime;
 
 void setup() {
   size(800, 400);
-
-  hoverSuggestion = false;
 
   // letter suggestions for each character
   keySuggestions.put('A', new Character[] {'N', 'L', 'S', 'T'});
@@ -77,15 +82,24 @@ void draw() {
   textAlign(LEFT);
   text("Typed: " + typedText, 50, 70);
 
+  // Draw keyboard
   for (int row = 0; row < keys.length; row++) {
     for (int col = 0; col < keys[row].length(); col++) {
-      drawKey(keys[row].charAt(col), 100 + col * keySize + (row * keySize / 2), 100 + row * keySize);
+      char keyChar = keys[row].charAt(col);
+      // Convert to lowercase if not in uppercase mode
+      if (!isUpperCase) {
+        keyChar = Character.toLowerCase(keyChar);
+      }
+      drawKey(keyChar, 100 + col * keySize + (row * keySize / 2), 100 + row * keySize);
     }
   }
 
   drawKey('_', 350, 250);
   drawKey('<', 400, 250);
   drawKey('⏎', 450, 250);
+
+  // Draw case toggle button
+  drawCaseToggleButton();
 
   if (currentSuggestions != null) {
     float actualSuggestionKeySizeHover = suggestionKeySize * suggestionKeySizeHoverFactor;
@@ -111,7 +125,7 @@ void draw() {
 }
 
 void drawKey(char label, int x, int y) {
-  if (mouseOverKey(x, y, keySize) && hoverSuggestion) {
+  if (mouseOverKey(x, y, keySize)) {
     fill(100);
   } else {
     fill(200);
@@ -122,6 +136,22 @@ void drawKey(char label, int x, int y) {
   textSize(20);
   textAlign(CENTER, CENTER);
   text(label, x + keySize / 2, y + keySize / 2);
+}
+
+void drawCaseToggleButton() {
+  // Check if mouse is over the case toggle button
+  boolean mouseOverToggle = (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
+                           mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize);
+
+  // Draw button with color based on state
+  fill(isUpperCase ? 150 : 180);
+  rect(caseToggleX, caseToggleY, caseToggleSize, caseToggleSize, 10);
+
+  // Draw text
+  fill(0);
+  textSize(20);
+  textAlign(CENTER, CENTER);
+  text(isUpperCase ? "ABC" : "abc", caseToggleX + caseToggleSize/2, caseToggleY + caseToggleSize/2);
 }
 
 void drawSuggestionKeys() {
@@ -188,6 +218,8 @@ void drawSuggestionKeys() {
 }
 
 void mousePressed() {
+  // Remove case toggle button click handling since it's now hover-based
+
   // 1. Handle Suggestion Key Clicks first
   if (currentSuggestions != null) {
     float actualSuggestionKeySizeHover = suggestionKeySize * suggestionKeySizeHoverFactor;
@@ -221,10 +253,11 @@ void mousePressed() {
 
       if (isClicked) {
         char clickedChar = currentSuggestions[i];
+        // Apply case based on global state
+        clickedChar = isUpperCase ? Character.toUpperCase(clickedChar) : Character.toLowerCase(clickedChar);
         typedText += clickedChar;
-        currentSuggestions = keySuggestions.get(clickedChar);
-        lastPressedKeyChar = clickedChar;
-        // Optionally, update lastPressedKeyX and lastPressedKeyY if you want the suggestions to move
+        currentSuggestions = keySuggestions.get(Character.toUpperCase(clickedChar));
+        lastPressedKeyChar = Character.toUpperCase(clickedChar);
         if (!timing && typedText.length() > 0) {
           startTime = millis();
           timing = true;
@@ -245,11 +278,13 @@ void mousePressed() {
           timing = true;
         }
         char typedChar = keys[row].charAt(col);
+        // Apply case based on global state
+        typedChar = isUpperCase ? typedChar : Character.toLowerCase(typedChar);
         typedText += typedChar;
-        lastPressedKeyChar = typedChar;
+        lastPressedKeyChar = Character.toUpperCase(keys[row].charAt(col));
         lastPressedKeyX = x;
         lastPressedKeyY = y;
-        currentSuggestions = keySuggestions.get(typedChar);
+        currentSuggestions = keySuggestions.get(Character.toUpperCase(keys[row].charAt(col)));
         return;
       }
     }
@@ -312,4 +347,18 @@ void evaluatePerformance() {
   }
   println("Time taken: " + timeTaken + "s, Accuracy: " + nf(accuracy, 0, 2) + "%");
   startTime = 0; // Reset startTime for the next round
+}
+
+void mouseMoved() {
+  // Check if mouse is over the case toggle button
+  boolean mouseOverToggle = (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
+                           mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize);
+
+  // Toggle case each time mouse enters the area
+  if (mouseOverToggle && !hasEnteredToggleArea) {
+    isUpperCase = !isUpperCase;  // Toggle the case
+    hasEnteredToggleArea = true;
+  } else if (!mouseOverToggle) {
+    hasEnteredToggleArea = false;  // Reset the flag when mouse leaves
+  }
 }
