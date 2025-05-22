@@ -1,8 +1,80 @@
 import java.util.*;
 
+// N-gram predictor class
+class NgramPredictor {
+    private int n;
+    private String text;
+    private Map<String, String> seeds;  // Maps n-1 length sequences to possible next chars
+    private String currentSeed;
+    private boolean initialized;
+
+    public NgramPredictor(int n) {
+        if (n <= 0) {
+            throw new RuntimeException("n needs to be at least 1");
+        }
+        this.n = n;
+        this.seeds = new HashMap<>();
+        this.initialized = false;
+        loadCorpus();
+    }
+
+    private void loadCorpus() {
+        // For now, using a simple example text. You can replace this with file loading
+        text = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG";
+
+        if (text.length() < n) {
+            throw new RuntimeException("text size is less than n");
+        }
+
+        // Build seeds map
+        if (n != 1) {
+            for (int i = 0; i <= text.length() - n; i++) {
+                String temp = text.substring(i, i + n - 1);
+                String nextChar = text.substring(i + n - 1, i + n);
+                if (!seeds.containsKey(temp)) {
+                    seeds.put(temp, nextChar);
+                } else {
+                    seeds.put(temp, seeds.get(temp) + nextChar);
+                }
+            }
+            // Set initial seed
+            int startIndex = (int)(Math.random() * (text.length() - n + 1));
+            currentSeed = text.substring(startIndex, startIndex + n - 1);
+        }
+        initialized = true;
+    }
+
+    public Character[] getPredictions(String context) {
+        if (!initialized) {
+            throw new RuntimeException("predictor has not been initialized");
+        }
+
+        // Get the last n-1 characters from context, or pad with spaces if not enough
+        String seed;
+        if (context.length() < n-1) {
+            seed = String.format("%" + (n-1) + "s", context).replace(' ', ' ');
+        } else {
+            seed = context.substring(context.length() - (n-1));
+        }
+
+        // Get possible next characters for this seed
+        String possibleNext = seeds.get(seed);
+        if (possibleNext == null || possibleNext.isEmpty()) {
+            return new Character[0];
+        }
+
+        // Convert to array of characters and return top 4
+        Character[] predictions = new Character[4];
+        for (int i = 0; i < Math.min(4, possibleNext.length()); i++) {
+            predictions[i] = possibleNext.charAt(i);
+        }
+        return predictions;
+    }
+}
+
 int keySize = 50;
 String typedText = "";
-String targetText = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG"; // Set the target text for accuracy measurement
+String targetText = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG";
 String[] keys = {
   "QWERTYUIOP",
   "ASDFGHJKL",
@@ -10,16 +82,19 @@ String[] keys = {
 };
 
 Map<Character, Integer[]> keyPositions = new HashMap<>();
-Map<Character, Character[]> keySuggestions = new HashMap<>();
+// Comment out old keySuggestions
+// Map<Character, Character[]> keySuggestions = new HashMap<>();
+
+// Create n-gram predictor
+NgramPredictor predictor = new NgramPredictor(3);  // Using trigrams
 
 // Global variables for suggestions
 Character[] currentSuggestions = null;
 char lastPressedKeyChar = '\0';
 int lastPressedKeyX, lastPressedKeyY;
-int suggestionKeySize = 40;
+int suggestionKeySize = 50;
 int suggestionSpacing = 5;
-float suggestionKeySizeHoverFactor = 1.5; // How much bigger suggestions get on hover
-boolean hoverSuggestion;
+float suggestionKeySizeHoverFactor = 1.5;
 
 // Case toggle variables
 boolean isUpperCase = false;  // Start in lowercase mode
@@ -33,41 +108,35 @@ long startTime, endTime;
 
 void setup() {
   size(800, 400);
-
-  // letter suggestions for each character
-  keySuggestions.put('A', new Character[] {'N', 'L', 'S', 'T'});
-  keySuggestions.put('B', new Character[] {'E', 'L', 'R', 'A'});
-  keySuggestions.put('C', new Character[] {'H', 'O', 'E', 'A'});
-  keySuggestions.put('D', new Character[] {'E', 'I', 'A', 'R'});
-  keySuggestions.put('E', new Character[] {'R', 'S', 'D', 'N'});
-  keySuggestions.put('F', new Character[] {'O', 'R', 'I', 'L'});
-  keySuggestions.put('G', new Character[] {'H', 'E', 'R', 'A'});
-  keySuggestions.put('H', new Character[] {'E', 'I', 'A', 'O'});
-  keySuggestions.put('I', new Character[] {'N', 'S', 'T', 'C'});
-  keySuggestions.put('J', new Character[] {'U', 'A', 'O', 'E'});
-  keySuggestions.put('K', new Character[] {'E', 'I', 'A', 'L'});
-  keySuggestions.put('L', new Character[] {'E', 'L', 'Y', 'I'});
-  keySuggestions.put('M', new Character[] {'E', 'A', 'I', 'O'});
-  keySuggestions.put('N', new Character[] {'E', 'T', 'D', 'G'});
-  keySuggestions.put('O', new Character[] {'N', 'U', 'R', 'F'});
-  keySuggestions.put('P', new Character[] {'R', 'E', 'L', 'A'});
-  keySuggestions.put('Q', new Character[] {'U', 'A', 'E', 'I'});
-  keySuggestions.put('R', new Character[] {'E', 'A', 'I', 'O'});
-  keySuggestions.put('S', new Character[] {'T', 'E', 'H', 'I'});
-  keySuggestions.put('T', new Character[] {'H', 'E', 'I', 'A'});
-  keySuggestions.put('U', new Character[] {'R', 'S', 'N', 'T'});
-  keySuggestions.put('V', new Character[] {'E', 'I', 'A', 'O'});
-  keySuggestions.put('W', new Character[] {'A', 'I', 'E', 'H'});
-  keySuggestions.put('X', new Character[] {'P', 'T', 'C', 'A'});
-  keySuggestions.put('Y', new Character[] {'S', 'E', 'O', 'T'});
-  keySuggestions.put('Z', new Character[] {'E', 'A', 'O', 'I'});
-
-  // map the location for each character
-  for (int row = 0; row < keys.length; row++) {
-    for (int col = 0; col < keys[row].length(); col++) {
-      // drawKey(keys[row].charAt(col), 100 + col * keySize + (row * keySize / 2), 100 + row * keySize);
-    }
-  }
+  // Comment out old keySuggestions initialization
+  /*
+  keySuggestions.put('A', new Character[] {'S', 'W', 'E', 'D'});
+  keySuggestions.put('B', new Character[] {'V', 'G', 'H', 'N'});
+  keySuggestions.put('C', new Character[] {'X', 'D', 'F', 'V'});
+  keySuggestions.put('D', new Character[] {'S', 'E', 'R', 'F'});
+  keySuggestions.put('E', new Character[] {'W', 'S', 'D', 'R'});
+  keySuggestions.put('F', new Character[] {'D', 'R', 'T', 'G'});
+  keySuggestions.put('G', new Character[] {'F', 'T', 'Y', 'H'});
+  keySuggestions.put('H', new Character[] {'G', 'Y', 'U', 'J'});
+  keySuggestions.put('I', new Character[] {'U', 'J', 'K', 'O'});
+  keySuggestions.put('J', new Character[] {'H', 'U', 'I', 'K'});
+  keySuggestions.put('K', new Character[] {'J', 'I', 'O', 'L'});
+  keySuggestions.put('L', new Character[] {'K', 'O', 'P', ';' });
+  keySuggestions.put('M', new Character[] {'N', 'J', 'K', ',' });
+  keySuggestions.put('N', new Character[] {'B', 'H', 'J', 'M'});
+  keySuggestions.put('O', new Character[] {'I', 'K', 'L', 'P'});
+  keySuggestions.put('P', new Character[] {'O', 'L', ';', '[' });
+  keySuggestions.put('Q', new Character[] {'W', 'A', 'S', '1'});
+  keySuggestions.put('R', new Character[] {'E', 'D', 'F', 'T'});
+  keySuggestions.put('S', new Character[] {'A', 'W', 'E', 'D'});
+  keySuggestions.put('T', new Character[] {'R', 'F', 'G', 'Y'});
+  keySuggestions.put('U', new Character[] {'Y', 'H', 'J', 'I'});
+  keySuggestions.put('V', new Character[] {'C', 'F', 'G', 'B'});
+  keySuggestions.put('W', new Character[] {'Q', 'A', 'S', 'E'});
+  keySuggestions.put('X', new Character[] {'Z', 'S', 'D', 'C'});
+  keySuggestions.put('Y', new Character[] {'T', 'G', 'H', 'U'});
+  keySuggestions.put('Z', new Character[] {'A', 'S', 'X', ' '});
+  */
 }
 
 void draw() {
@@ -90,13 +159,13 @@ void draw() {
       if (!isUpperCase) {
         keyChar = Character.toLowerCase(keyChar);
       }
-      drawKey(keyChar, 100 + col * keySize + (row * keySize / 2), 100 + row * keySize);
+      drawKey(keyChar, 100 + col * keySize + (row * keySize / 2), 150 + row * keySize);
     }
   }
 
-  drawKey('_', 350, 250);
-  drawKey('<', 400, 250);
-  drawKey('⏎', 450, 250);
+  drawKey('_', 350, 300);
+  drawKey('<', 400, 300);
+  drawKey('⏎', 450, 300);
 
   // Draw case toggle button
   drawCaseToggleButton();
@@ -220,7 +289,18 @@ void drawSuggestionKeys() {
 }
 
 void mousePressed() {
-  // Remove case toggle button click handling since it's now hover-based
+  // Clear suggestions if right mouse button is pressed
+  if (mouseButton == RIGHT) {
+    currentSuggestions = null;
+    return;
+  }
+
+  // Check for case toggle button click first
+  if (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
+      mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize) {
+    isUpperCase = !isUpperCase;
+    return;
+  }
 
   // 1. Handle Suggestion Key Clicks first
   if (currentSuggestions != null) {
@@ -247,7 +327,6 @@ void mousePressed() {
       float baseKeyCenterX = baseX + suggestionKeySize / 2.0f;
       float baseKeyCenterY = baseY + suggestionKeySize / 2.0f;
 
-      // Check click against the (potentially larger) hovered area
       boolean isClicked = (mouseX >= baseKeyCenterX - actualSuggestionKeySizeHover / 2.0f &&
                            mouseX <= baseKeyCenterX + actualSuggestionKeySizeHover / 2.0f &&
                            mouseY >= baseKeyCenterY - actualSuggestionKeySizeHover / 2.0f &&
@@ -255,10 +334,10 @@ void mousePressed() {
 
       if (isClicked) {
         char clickedChar = currentSuggestions[i];
-        // Apply case based on global state
         clickedChar = isUpperCase ? Character.toUpperCase(clickedChar) : Character.toLowerCase(clickedChar);
         typedText += clickedChar;
-        currentSuggestions = keySuggestions.get(Character.toUpperCase(clickedChar));
+        // Update suggestions based on new context
+        currentSuggestions = predictor.getPredictions(typedText);
         lastPressedKeyChar = Character.toUpperCase(clickedChar);
         if (!timing && typedText.length() > 0) {
           startTime = millis();
@@ -273,27 +352,27 @@ void mousePressed() {
   for (int row = 0; row < keys.length; row++) {
     for (int col = 0; col < keys[row].length(); col++) {
       int x = 100 + col * keySize + (row * keySize / 2);
-      int y = 100 + row * keySize;
+      int y = 150 + row * keySize;
       if (mouseOverKey(x, y, keySize)) {
         if (!timing) {
           startTime = millis();
           timing = true;
         }
         char typedChar = keys[row].charAt(col);
-        // Apply case based on global state
         typedChar = isUpperCase ? typedChar : Character.toLowerCase(typedChar);
         typedText += typedChar;
         lastPressedKeyChar = Character.toUpperCase(keys[row].charAt(col));
         lastPressedKeyX = x;
         lastPressedKeyY = y;
-        currentSuggestions = keySuggestions.get(Character.toUpperCase(keys[row].charAt(col)));
+        // Update suggestions based on new context
+        currentSuggestions = predictor.getPredictions(typedText);
         return;
       }
     }
   }
 
   // 3. Handle Space Key
-  if (mouseOverKey(350, 250, keySize)) {
+  if (mouseOverKey(350, 300, keySize)) {
     typedText += " ";
     currentSuggestions = null;
     if (!timing && typedText.trim().length() > 0) {
@@ -306,7 +385,7 @@ void mousePressed() {
   }
 
   // 4. Handle Backspace Key
-  if (mouseOverKey(400, 250, keySize) && typedText.length() > 0) {
+  if (mouseOverKey(400, 300, keySize) && typedText.length() > 0) {
     typedText = typedText.substring(0, typedText.length() - 1);
     currentSuggestions = null;
     if (typedText.length() == 0) {
@@ -316,7 +395,7 @@ void mousePressed() {
   }
 
   // 5. Handle Enter Key
-  if (mouseOverKey(450, 250, keySize)) {
+  if (mouseOverKey(450, 300, keySize)) {
     if (timing) {
       endTime = millis();
       evaluatePerformance();
