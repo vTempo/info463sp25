@@ -1,4 +1,5 @@
 import java.util.*;
+import java.io.*;
 
 // N-gram predictor class
 class NgramPredictor {
@@ -19,8 +20,14 @@ class NgramPredictor {
     }
 
     private void loadCorpus() {
-        // For now, using a simple example text. You can replace this with file loading
-        text = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG";
+        // Load text from file
+        System.out.println("hi");
+
+        text = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG THR";
+        String[] lines = loadStrings("sample.txt");
+        System.out.println(lines[0]);
+        text = String.join(" ", lines);
+        System.out.println(text);
 
         if (text.length() < n) {
             throw new RuntimeException("text size is less than n");
@@ -63,10 +70,18 @@ class NgramPredictor {
             return new Character[0];
         }
 
-        // Convert to array of characters and return top 4
+        // Use a Set to track unique characters
+        Set<Character> uniqueChars = new HashSet<>();
+        for (char c : possibleNext.toCharArray()) {
+            uniqueChars.add(c);
+        }
+
+        // Convert unique characters to array and return top 4
         Character[] predictions = new Character[4];
-        for (int i = 0; i < Math.min(4, possibleNext.length()); i++) {
-            predictions[i] = possibleNext.charAt(i);
+        int i = 0;
+        for (Character c : uniqueChars) {
+            if (i >= 4) break;
+            predictions[i++] = c;
         }
         return predictions;
     }
@@ -86,7 +101,7 @@ Map<Character, Integer[]> keyPositions = new HashMap<>();
 // Map<Character, Character[]> keySuggestions = new HashMap<>();
 
 // Create n-gram predictor
-NgramPredictor predictor = new NgramPredictor(3);  // Using trigrams
+NgramPredictor predictor;
 
 // Global variables for suggestions
 Character[] currentSuggestions = null;
@@ -137,6 +152,7 @@ void setup() {
   keySuggestions.put('Y', new Character[] {'T', 'G', 'H', 'U'});
   keySuggestions.put('Z', new Character[] {'A', 'S', 'X', ' '});
   */
+  predictor = new NgramPredictor(3);  // Using trigrams
 }
 
 void draw() {
