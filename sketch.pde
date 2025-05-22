@@ -82,13 +82,36 @@ class NgramPredictor {
             uniqueChars.add(c);
         }
 
-        // Convert unique characters to array and return top 4
+        // Convert unique characters to array
         Character[] predictions = new Character[4];
         int i = 0;
         for (Character c : uniqueChars) {
             if (i >= 4) break;
             predictions[i++] = c;
         }
+
+        // If we have fewer than 4 predictions, fill remaining slots with keySuggestions
+        if (i < 4 && context.length() > 0) {
+            char lastChar = context.charAt(context.length() - 1);
+            Character[] defaultSuggestions = keySuggestions.get(Character.toUpperCase(lastChar));
+            if (defaultSuggestions != null) {
+                for (Character c : defaultSuggestions) {
+                    if (i >= 4) break;
+                    // Only add if not already in predictions
+                    boolean alreadyExists = false;
+                    for (int j = 0; j < i; j++) {
+                        if (predictions[j] == c) {
+                            alreadyExists = true;
+                            break;
+                        }
+                    }
+                    if (!alreadyExists) {
+                        predictions[i++] = c;
+                    }
+                }
+            }
+        }
+
         return predictions;
     }
 }
@@ -103,8 +126,7 @@ String[] keys = {
 };
 
 Map<Character, Integer[]> keyPositions = new HashMap<>();
-// Comment out old keySuggestions
-// Map<Character, Character[]> keySuggestions = new HashMap<>();
+Map<Character, Character[]> keySuggestions = new HashMap<>();
 
 // Create n-gram predictor
 NgramPredictor predictor;
@@ -130,7 +152,7 @@ long startTime, endTime;
 void setup() {
   size(800, 400);
   // Comment out old keySuggestions initialization
-  /*
+
   keySuggestions.put('A', new Character[] {'S', 'W', 'E', 'D'});
   keySuggestions.put('B', new Character[] {'V', 'G', 'H', 'N'});
   keySuggestions.put('C', new Character[] {'X', 'D', 'F', 'V'});
@@ -157,7 +179,7 @@ void setup() {
   keySuggestions.put('X', new Character[] {'Z', 'S', 'D', 'C'});
   keySuggestions.put('Y', new Character[] {'T', 'G', 'H', 'U'});
   keySuggestions.put('Z', new Character[] {'A', 'S', 'X', ' '});
-  */
+
   predictor = new NgramPredictor(4);  // Using 4-grams
 }
 
