@@ -24,10 +24,13 @@ class NgramPredictor {
         System.out.println("hi");
 
         text = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG THR";
-        String[] lines = loadStrings("sample.txt");
-        System.out.println(lines[0]);
+        // String[] lines = loadStrings("sample.txt");
+        // String[] lines = loadStrings("eng-uk_web-public_2018_10K-sentences.txt");
+        // String[] lines = loadStrings("eng_news_2024_30K-sentences.txt");
+        String[] lines = loadStrings("pg1342.txt");
         text = String.join(" ", lines);
-        System.out.println(text);
+        // Convert all text to uppercase
+        text = text.toUpperCase();
 
         if (text.length() < n) {
             throw new RuntimeException("text size is less than n");
@@ -55,6 +58,9 @@ class NgramPredictor {
         if (!initialized) {
             throw new RuntimeException("predictor has not been initialized");
         }
+
+        // Convert context to uppercase
+        context = context.toUpperCase();
 
         // Get the last n-1 characters from context, or pad with spaces if not enough
         String seed;
@@ -108,7 +114,7 @@ Character[] currentSuggestions = null;
 char lastPressedKeyChar = '\0';
 int lastPressedKeyX, lastPressedKeyY;
 int suggestionKeySize = 50;
-int suggestionSpacing = 5;
+int suggestionSpacing = 10;
 float suggestionKeySizeHoverFactor = 1.5;
 
 // Case toggle variables
@@ -152,7 +158,7 @@ void setup() {
   keySuggestions.put('Y', new Character[] {'T', 'G', 'H', 'U'});
   keySuggestions.put('Z', new Character[] {'A', 'S', 'X', ' '});
   */
-  predictor = new NgramPredictor(3);  // Using trigrams
+  predictor = new NgramPredictor(4);  // Using 4-grams
 }
 
 void draw() {
@@ -210,7 +216,43 @@ void draw() {
 }
 
 void drawKey(char label, int x, int y) {
-  if (mouseOverKey(x, y, keySize)) {
+  // Check if mouse is over any suggestion key first
+  boolean mouseOverSuggestion = false;
+  if (currentSuggestions != null) {
+    float actualSuggestionKeySizeHover = suggestionKeySize * suggestionKeySizeHoverFactor;
+    float keyCenterX = lastPressedKeyX + keySize / 2.0f;
+    float keyCenterY = lastPressedKeyY + keySize / 2.0f;
+
+    float[] baseXs = new float[4];
+    float[] baseYs = new float[4];
+    baseXs[0] = keyCenterX - suggestionKeySize / 2.0f;
+    baseYs[0] = lastPressedKeyY - suggestionSpacing - suggestionKeySize;
+    baseXs[1] = lastPressedKeyX + keySize + suggestionSpacing;
+    baseYs[1] = keyCenterY - suggestionKeySize / 2.0f;
+    baseXs[2] = keyCenterX - suggestionKeySize / 2.0f;
+    baseYs[2] = lastPressedKeyY + keySize + suggestionSpacing;
+    baseXs[3] = lastPressedKeyX - suggestionSpacing - suggestionKeySize;
+    baseYs[3] = keyCenterY - suggestionKeySize / 2.0f;
+
+    for (int i = 0; i < currentSuggestions.length && i < 4; i++) {
+      if (currentSuggestions[i] == null) continue;
+      float baseX = baseXs[i];
+      float baseY = baseYs[i];
+      float baseKeyCenterX = baseX + suggestionKeySize / 2.0f;
+      float baseKeyCenterY = baseY + suggestionKeySize / 2.0f;
+
+      if (mouseX >= baseKeyCenterX - actualSuggestionKeySizeHover / 2.0f &&
+          mouseX <= baseKeyCenterX + actualSuggestionKeySizeHover / 2.0f &&
+          mouseY >= baseKeyCenterY - actualSuggestionKeySizeHover / 2.0f &&
+          mouseY <= baseKeyCenterY + actualSuggestionKeySizeHover / 2.0f) {
+        mouseOverSuggestion = true;
+        break;
+      }
+    }
+  }
+
+  // Only highlight regular key if mouse is not over any suggestion
+  if (mouseOverKey(x, y, keySize) && !mouseOverSuggestion) {
     fill(100);
   } else {
     fill(200);
