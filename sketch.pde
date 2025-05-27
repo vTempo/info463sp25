@@ -116,7 +116,7 @@ class NgramPredictor {
     }
 }
 
-int keySize = 50;
+int keySize = 100;  // Doubled from 50
 String typedText = "";
 String targetText = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG";
 String[] keys = {
@@ -125,7 +125,6 @@ String[] keys = {
   "ZXCVBNM"
 };
 
-Map<Character, Integer[]> keyPositions = new HashMap<>();
 Map<Character, Character[]> keySuggestions = new HashMap<>();
 
 // Create n-gram predictor
@@ -135,50 +134,49 @@ NgramPredictor predictor;
 Character[] currentSuggestions = null;
 char lastPressedKeyChar = '\0';
 int lastPressedKeyX, lastPressedKeyY;
-int suggestionKeySize = 50;
-int suggestionSpacing = 10;
+int suggestionKeySize = 100;  // Doubled from 50
+int suggestionSpacing = 20;  // Doubled from 10
 float suggestionKeySizeHoverFactor = 1.5;
 
 // Case toggle variables
 boolean isUpperCase = false;  // Start in lowercase mode
 boolean hasEnteredToggleArea = false;  // Track if mouse has ever entered toggle area
-int caseToggleX = 650;  // Position of the case toggle button
-int caseToggleY = 200;
-int caseToggleSize = 80;
+int caseToggleX = 1300;  // Doubled from 650
+int caseToggleY = 400;  // Doubled from 200
+int caseToggleSize = 160;  // Doubled from 80
 
 boolean timing = false;
 long startTime, endTime;
 
 void setup() {
-  size(800, 400);
-  // Comment out old keySuggestions initialization
+  size(1600, 800);  // Doubled from 800, 400
 
-  keySuggestions.put('A', new Character[] {'S', 'W', 'E', 'D'});
-  keySuggestions.put('B', new Character[] {'V', 'G', 'H', 'N'});
-  keySuggestions.put('C', new Character[] {'X', 'D', 'F', 'V'});
-  keySuggestions.put('D', new Character[] {'S', 'E', 'R', 'F'});
-  keySuggestions.put('E', new Character[] {'W', 'S', 'D', 'R'});
-  keySuggestions.put('F', new Character[] {'D', 'R', 'T', 'G'});
-  keySuggestions.put('G', new Character[] {'F', 'T', 'Y', 'H'});
-  keySuggestions.put('H', new Character[] {'G', 'Y', 'U', 'J'});
-  keySuggestions.put('I', new Character[] {'U', 'J', 'K', 'O'});
-  keySuggestions.put('J', new Character[] {'H', 'U', 'I', 'K'});
-  keySuggestions.put('K', new Character[] {'J', 'I', 'O', 'L'});
-  keySuggestions.put('L', new Character[] {'K', 'O', 'P', ';' });
-  keySuggestions.put('M', new Character[] {'N', 'J', 'K', ',' });
-  keySuggestions.put('N', new Character[] {'B', 'H', 'J', 'M'});
-  keySuggestions.put('O', new Character[] {'I', 'K', 'L', 'P'});
-  keySuggestions.put('P', new Character[] {'O', 'L', ';', '[' });
-  keySuggestions.put('Q', new Character[] {'W', 'A', 'S', '1'});
-  keySuggestions.put('R', new Character[] {'E', 'D', 'F', 'T'});
-  keySuggestions.put('S', new Character[] {'A', 'W', 'E', 'D'});
-  keySuggestions.put('T', new Character[] {'R', 'F', 'G', 'Y'});
-  keySuggestions.put('U', new Character[] {'Y', 'H', 'J', 'I'});
-  keySuggestions.put('V', new Character[] {'C', 'F', 'G', 'B'});
-  keySuggestions.put('W', new Character[] {'Q', 'A', 'S', 'E'});
-  keySuggestions.put('X', new Character[] {'Z', 'S', 'D', 'C'});
-  keySuggestions.put('Y', new Character[] {'T', 'G', 'H', 'U'});
-  keySuggestions.put('Z', new Character[] {'A', 'S', 'X', ' '});
+  keySuggestions.put('A', new Character[] {'N', 'L', 'S', 'T'});
+  keySuggestions.put('B', new Character[] {'E', 'L', 'R', 'A'});
+  keySuggestions.put('C', new Character[] {'H', 'O', 'E', 'A'});
+  keySuggestions.put('D', new Character[] {'E', 'I', 'A', 'R'});
+  keySuggestions.put('E', new Character[] {'R', 'S', 'D', 'N'});
+  keySuggestions.put('F', new Character[] {'O', 'R', 'I', 'L'});
+  keySuggestions.put('G', new Character[] {'H', 'E', 'R', 'A'});
+  keySuggestions.put('H', new Character[] {'E', 'I', 'A', 'O'});
+  keySuggestions.put('I', new Character[] {'N', 'S', 'T', 'C'});
+  keySuggestions.put('J', new Character[] {'U', 'A', 'O', 'E'});
+  keySuggestions.put('K', new Character[] {'E', 'I', 'A', 'L'});
+  keySuggestions.put('L', new Character[] {'E', 'L', 'Y', 'I'});
+  keySuggestions.put('M', new Character[] {'E', 'A', 'I', 'O'});
+  keySuggestions.put('N', new Character[] {'E', 'T', 'D', 'G'});
+  keySuggestions.put('O', new Character[] {'N', 'U', 'R', 'F'});
+  keySuggestions.put('P', new Character[] {'R', 'E', 'L', 'A'});
+  keySuggestions.put('Q', new Character[] {'U', 'A', 'E', 'I'});
+  keySuggestions.put('R', new Character[] {'E', 'A', 'I', 'O'});
+  keySuggestions.put('S', new Character[] {'T', 'E', 'H', 'I'});
+  keySuggestions.put('T', new Character[] {'H', 'E', 'I', 'A'});
+  keySuggestions.put('U', new Character[] {'R', 'S', 'N', 'T'});
+  keySuggestions.put('V', new Character[] {'E', 'I', 'A', 'O'});
+  keySuggestions.put('W', new Character[] {'A', 'I', 'E', 'H'});
+  keySuggestions.put('X', new Character[] {'P', 'T', 'C', 'A'});
+  keySuggestions.put('Y', new Character[] {'S', 'E', 'O', 'T'});
+  keySuggestions.put('Z', new Character[] {'E', 'A', 'O', 'I'});
 
   predictor = new NgramPredictor(4);  // Using 4-grams
 }
@@ -187,13 +185,13 @@ void draw() {
   background(240);
 
   fill(100, 0, 0);
-  textSize(24);
+  textSize(48);  // Doubled from 24
   textAlign(LEFT);
-  text("Target: " + targetText, 50, 40);
+  text("Target: " + targetText, 100, 80);  // Doubled from 50, 40
 
   fill(0);
   textAlign(LEFT);
-  text("Typed: " + typedText, 50, 70);
+  text("Typed: " + typedText, 100, 140);  // Doubled from 50, 70
 
   // Draw keyboard
   for (int row = 0; row < keys.length; row++) {
@@ -203,13 +201,14 @@ void draw() {
       if (!isUpperCase) {
         keyChar = Character.toLowerCase(keyChar);
       }
-      drawKey(keyChar, 100 + col * keySize + (row * keySize / 2), 150 + row * keySize);
+      drawKey(keyChar, 200 + col * keySize + (row * keySize / 2), 300 + row * keySize);
     }
   }
 
-  drawKey('_', 350, 300);
-  drawKey('<', 400, 300);
-  drawKey('⏎', 450, 300);
+  // Draw space key (4x width)
+  drawKey(' ', 400, 600, keySize * 4);
+  drawKey('<', 800, 600);
+  drawEnterKey(900, 600);
 
   // Draw case toggle button
   drawCaseToggleButton();
@@ -238,6 +237,10 @@ void draw() {
 }
 
 void drawKey(char label, int x, int y) {
+  drawKey(label, x, y, keySize);
+}
+
+void drawKey(char label, int x, int y, int width) {
   // Check if mouse is over any suggestion key first
   boolean mouseOverSuggestion = false;
   if (currentSuggestions != null) {
@@ -274,17 +277,17 @@ void drawKey(char label, int x, int y) {
   }
 
   // Only highlight regular key if mouse is not over any suggestion
-  if (mouseOverKey(x, y, keySize) && !mouseOverSuggestion) {
+  if (mouseOverKey(x, y, width, keySize) && !mouseOverSuggestion) {
     fill(100);
   } else {
     fill(200);
   }
-  rect(x, y, keySize, keySize, 5);
+  rect(x, y, width, keySize, 5);
 
   fill(0);
-  textSize(20);
+  textSize(40);
   textAlign(CENTER, CENTER);
-  text(label, x + keySize / 2, y + keySize / 2);
+  text(label, x + width / 2, y + keySize / 2);
 }
 
 void drawCaseToggleButton() {
@@ -298,7 +301,7 @@ void drawCaseToggleButton() {
 
   // Draw text
   fill(0);
-  textSize(20);
+  textSize(40);  // Doubled from 20
   textAlign(CENTER, CENTER);
   text(isUpperCase ? "ABC" : "abc", caseToggleX + caseToggleSize/2, caseToggleY + caseToggleSize/2);
 }
@@ -355,7 +358,7 @@ void drawSuggestionKeys() {
       currentDrawSize = actualSuggestionKeySizeHover;
       drawX = baseKeyCenterX - currentDrawSize / 2.0f;
       drawY = baseKeyCenterY - currentDrawSize / 2.0f;
-      fill(120); // Highlight for hovered suggestion key
+      fill(170); // Highlight for hovered suggestion key
     } else {
       fill(220); // Default color for suggestion key
     }
@@ -366,6 +369,25 @@ void drawSuggestionKeys() {
     textAlign(CENTER, CENTER);
     text(suggestionChar, baseKeyCenterX, baseKeyCenterY); // Text centered on original base key center
   }
+}
+
+void drawEnterKey(int x, int y) {
+  // Check if mouse is over the enter key
+  boolean mouseOverEnter = mouseOverKey(x, y, keySize);
+
+  // Draw key with color based on hover
+  if (mouseOverEnter) {
+    fill(100);
+  } else {
+    fill(200);
+  }
+  rect(x, y, keySize, keySize, 5);
+
+  // Draw text
+  fill(0);
+  textSize(24);  // Smaller text size to fit the word
+  textAlign(CENTER, CENTER);
+  text("ENTER", x + keySize/2, y + keySize/2);
 }
 
 void mousePressed() {
@@ -431,8 +453,8 @@ void mousePressed() {
   // 2. Handle Main QWERTY Key Clicks
   for (int row = 0; row < keys.length; row++) {
     for (int col = 0; col < keys[row].length(); col++) {
-      int x = 100 + col * keySize + (row * keySize / 2);
-      int y = 150 + row * keySize;
+      int x = 200 + col * keySize + (row * keySize / 2);
+      int y = 300 + row * keySize;
       if (mouseOverKey(x, y, keySize)) {
         if (!timing) {
           startTime = millis();
@@ -452,7 +474,7 @@ void mousePressed() {
   }
 
   // 3. Handle Space Key
-  if (mouseOverKey(350, 300, keySize)) {
+  if (mouseOverKey(700, 600, keySize * 4, keySize)) {
     typedText += " ";
     currentSuggestions = null;
     if (!timing && typedText.trim().length() > 0) {
@@ -465,7 +487,7 @@ void mousePressed() {
   }
 
   // 4. Handle Backspace Key
-  if (mouseOverKey(400, 300, keySize) && typedText.length() > 0) {
+  if (mouseOverKey(1100, 600, keySize) && typedText.length() > 0) {
     typedText = typedText.substring(0, typedText.length() - 1);
     currentSuggestions = null;
     if (typedText.length() == 0) {
@@ -475,7 +497,7 @@ void mousePressed() {
   }
 
   // 5. Handle Enter Key
-  if (mouseOverKey(450, 300, keySize)) {
+  if (mouseOverKey(900, 600, keySize)) {
     if (timing) {
       endTime = millis();
       evaluatePerformance();
@@ -487,7 +509,11 @@ void mousePressed() {
 }
 
 boolean mouseOverKey(int x, int y, int size) {
-  return mouseX > x && mouseX < x + size && mouseY > y && mouseY < y + size;
+  return mouseOverKey(x, y, size, size);
+}
+
+boolean mouseOverKey(int x, int y, int width, int height) {
+  return mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height;
 }
 
 void evaluatePerformance() {
