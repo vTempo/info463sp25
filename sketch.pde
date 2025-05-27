@@ -29,8 +29,15 @@ class NgramPredictor {
         // String[] lines = loadStrings("eng_news_2024_30K-sentences.txt");
         String[] lines = loadStrings("pg1342.txt");
         text = String.join(" ", lines);
-        // Convert all text to uppercase
-        text = text.toUpperCase();
+
+        // Convert all text to uppercase and filter to only letters and spaces
+        StringBuilder filteredText = new StringBuilder();
+        for (char c : text.toUpperCase().toCharArray()) {
+            if (Character.isLetter(c) || c == ' ') {
+                filteredText.append(c);
+            }
+        }
+        text = filteredText.toString();
 
         if (text.length() < n) {
             throw new RuntimeException("text size is less than n");
@@ -278,7 +285,7 @@ void drawKey(char label, int x, int y, int width) {
 
   // Only highlight regular key if mouse is not over any suggestion
   if (mouseOverKey(x, y, width, keySize) && !mouseOverSuggestion) {
-    fill(100);
+    fill(150);
   } else {
     fill(200);
   }
@@ -474,7 +481,7 @@ void mousePressed() {
   }
 
   // 3. Handle Space Key
-  if (mouseOverKey(700, 600, keySize * 4, keySize)) {
+  if (mouseOverKey(400, 600, keySize * 4, keySize)) {
     typedText += " ";
     currentSuggestions = null;
     if (!timing && typedText.trim().length() > 0) {
@@ -487,7 +494,7 @@ void mousePressed() {
   }
 
   // 4. Handle Backspace Key
-  if (mouseOverKey(1100, 600, keySize) && typedText.length() > 0) {
+  if (mouseOverKey(800, 600, keySize) && typedText.length() > 0) {
     typedText = typedText.substring(0, typedText.length() - 1);
     currentSuggestions = null;
     if (typedText.length() == 0) {
