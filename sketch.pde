@@ -98,7 +98,9 @@ class NgramPredictor {
         }
 
         // If we have fewer than 4 predictions, fill remaining slots with keySuggestions
+        System.out.println(i);
         if (i < 4 && context.length() > 0) {
+          System.out.println("in if fewer than 4 suggestions");
             char lastChar = context.charAt(context.length() - 1);
             Character[] defaultSuggestions = keySuggestions.get(Character.toUpperCase(lastChar));
             if (defaultSuggestions != null) {
@@ -527,6 +529,58 @@ boolean mouseOverKey(int x, int y, int width, int height) {
   return mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height;
 }
 
+float calculateWPM(int timeInSeconds, int correctChars, float accuracy) {
+  // Standard WPM calculation: (characters / 5) / (minutes)
+  float words = correctChars / 5.0;
+  float minutes = timeInSeconds / 60.0;
+  float wpm = minutes > 0 ? words / minutes : 0;
+  // Adjust WPM by accuracy
+  return wpm * (accuracy / 100.0);
+}
+
+int levenshteinDistance(String s1, String s2) {
+  int[][] dp = new int[s1.length() + 1][s2.length() + 1];
+
+  for (int i = 0; i <= s1.length(); i++) {
+    dp[i][0] = i;
+  }
+  for (int j = 0; j <= s2.length(); j++) {
+    dp[0][j] = j;
+  }
+
+  for (int i = 1; i <= s1.length(); i++) {
+    for (int j = 1; j <= s2.length(); j++) {
+      if (s1.charAt(i-1) == s2.charAt(j-1)) {
+        dp[i][j] = dp[i-1][j-1];
+      } else {
+        dp[i][j] = 1 + min(dp[i-1][j-1], min(dp[i-1][j], dp[i][j-1]));
+      }
+    }
+  }
+  return dp[s1.length()][s2.length()];
+}
+
+void savePerformanceData(String typedText, String targetText, long startTime, long endTime,
+                        int timeTaken, float accuracy, float awpm, int distance) {
+  try {
+    PrintWriter output = createWriter("typing_performance.txt");
+    output.println("Timestamp: " + new Date().toString());
+    output.println("Target Text: " + targetText);
+    output.println("Typed Text: " + typedText);
+    output.println("Start Time: " + startTime);
+    output.println("End Time: " + endTime);
+    output.println("Time Taken (seconds): " + timeTaken);
+    output.println("Accuracy: " + nf(accuracy, 0, 2) + "%");
+    output.println("Adjusted Words Per Minute: " + nf(awpm, 0, 2));
+    output.println("Levenshtein Distance: " + distance);
+    output.println("----------------------------------------");
+    output.flush();
+    output.close();
+  } catch (Exception e) {
+    println("Error saving performance data: " + e.getMessage());
+  }
+}
+
 void evaluatePerformance() {
   if (startTime == 0) return; // Avoid issues if enter is pressed before typing
   int timeTaken = (int) ((endTime - startTime) / 1000.0);
@@ -543,7 +597,20 @@ void evaluatePerformance() {
   if (targetText.length() > 0) {
     accuracy = (correctChars / (float) targetText.length()) * 100;
   }
-  println("Time taken: " + timeTaken + "s, Accuracy: " + nf(accuracy, 0, 2) + "%");
+
+  // Calculate adjusted WPM and Levenshtein distance
+  float awpm = calculateWPM(timeTaken, correctChars, accuracy);
+  int distance = levenshteinDistance(typedText, targetText);
+
+  // Print performance metrics
+  println("Time taken: " + timeTaken + "s");
+  println("Accuracy: " + nf(accuracy, 0, 2) + "%");
+  println("Adjusted Words Per Minute: " + nf(awpm, 0, 2));
+  println("Levenshtein Distance: " + distance);
+
+  // Save performance data to file
+  savePerformanceData(typedText, targetText, startTime, endTime, timeTaken, accuracy, awpm, distance);
+
   startTime = 0; // Reset startTime for the next round
 }
 
