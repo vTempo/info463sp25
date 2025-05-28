@@ -148,8 +148,8 @@ float suggestionKeySizeHoverFactor = 1.5;
 // Case toggle variables
 boolean isUpperCase = false;  // Start in lowercase mode
 boolean hasEnteredToggleArea = false;  // Track if mouse has ever entered toggle area
-int caseToggleX = 1300;  // Doubled from 650
-int caseToggleY = 400;  // Doubled from 200
+int caseToggleX = 1400;  // Position in bottom right corner
+int caseToggleY = 550;   // Moved up 150 pixels from 700
 int caseToggleSize = 160;  // Doubled from 80
 
 boolean timing = false;
@@ -212,10 +212,14 @@ void draw() {
     }
   }
 
+  // Draw backspace key (after P)
+  drawKey('<', 200 + 10 * keySize + (0 * keySize / 2), 300);
+
+  // Draw enter key (after L)
+  drawEnterKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize);
+
   // Draw space key (4x width)
   drawKey(' ', 400, 600, keySize * 4);
-  drawKey('<', 800, 600);
-  drawEnterKey(900, 600);
 
   // Draw case toggle button
   drawCaseToggleButton();
@@ -494,7 +498,7 @@ void mousePressed() {
   }
 
   // 4. Handle Backspace Key
-  if (mouseOverKey(800, 600, keySize) && typedText.length() > 0) {
+  if (mouseOverKey(200 + 10 * keySize + (0 * keySize / 2), 300, keySize) && typedText.length() > 0) {
     typedText = typedText.substring(0, typedText.length() - 1);
     currentSuggestions = null;
     if (typedText.length() == 0) {
@@ -504,7 +508,7 @@ void mousePressed() {
   }
 
   // 5. Handle Enter Key
-  if (mouseOverKey(900, 600, keySize)) {
+  if (mouseOverKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize, keySize)) {
     if (timing) {
       endTime = millis();
       evaluatePerformance();
