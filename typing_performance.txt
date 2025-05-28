@@ -1,10 +1,10 @@
-Timestamp: Wed May 28 11:07:11 PDT 2025
+Timestamp: Wed May 28 11:58:33 PDT 2025
 Target Text: THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG
-Typed Text: tetreblooj
-Start Time: 706811
-End Time: 775315
-Time Taken (seconds): 68
-Accuracy: 0.00%
-Adjusted Words Per Minute: 0.00
-Levenshtein Distance: 44
+Typed Text: YTDJJVOD ZDXHXXXNGAJJJTIIP
+Start Time: 5813
+End Time: 22618
+Time Taken (seconds): 16
+Accuracy: 2.27%
+Adjusted Words Per Minute: 0.02
+Levenshtein Distance: 40
 ----------------------------------------

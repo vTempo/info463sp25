@@ -21,7 +21,6 @@ class NgramPredictor {
 
     private void loadCorpus() {
         // Load text from file
-        System.out.println("hi");
 
         text = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG THR";
         // String[] lines = loadStrings("sample.txt");
@@ -80,7 +79,8 @@ class NgramPredictor {
         // Get possible next characters for this seed
         String possibleNext = seeds.get(seed);
         if (possibleNext == null || possibleNext.isEmpty()) {
-            return new Character[0];
+          char lastChar = context.charAt(context.length() - 1);
+          return keySuggestions.get(Character.toUpperCase(lastChar));
         }
 
         // Use a Set to track unique characters
@@ -98,9 +98,7 @@ class NgramPredictor {
         }
 
         // If we have fewer than 4 predictions, fill remaining slots with keySuggestions
-        System.out.println(i);
         if (i < 4 && context.length() > 0) {
-          System.out.println("in if fewer than 4 suggestions");
             char lastChar = context.charAt(context.length() - 1);
             Character[] defaultSuggestions = keySuggestions.get(Character.toUpperCase(lastChar));
             if (defaultSuggestions != null) {
