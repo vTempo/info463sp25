@@ -350,7 +350,9 @@ void drawSuggestionKeys() {
     fill(0);
     textSize(currentDrawSize * 0.6f); // Scale text size
     textAlign(CENTER, CENTER);
-    text(suggestionChar, baseKeyCenterX, baseKeyCenterY); // Text centered on original base key center
+    // Display underscore for space character, but keep the original character for functionality
+    char displayChar = suggestionChar == ' ' ? '_' : suggestionChar;
+    text(displayChar, baseKeyCenterX, baseKeyCenterY); // Text centered on original base key center
   }
 }
 
