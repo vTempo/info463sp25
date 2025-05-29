@@ -154,6 +154,8 @@ int caseToggleSize = 160;  // Doubled from 80
 
 boolean timing = false;
 long startTime, endTime;
+int numMistakes;
+int numCharTyped;
 
 void setup() {
   size(1600, 800);  // Doubled from 800, 400
@@ -186,6 +188,8 @@ void setup() {
   keySuggestions.put('Z', new Character[] {'E', 'A', 'O', 'I'});
 
   predictor = new NgramPredictor(4);  // Using 4-grams
+  numMistakes = 0;
+  numCharTyped = 0;
 }
 
 void draw() {
@@ -213,10 +217,10 @@ void draw() {
   }
 
   // Draw backspace key (after P)
-  drawKey('<', 200 + 10 * keySize + (0 * keySize / 2), 300);
+  drawKey('<', 200 + 10 * keySize + (0 * keySize / 2), 300, keySize * 2);
 
   // Draw enter key (after L)
-  drawEnterKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize);
+  drawEnterKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize, keySize * 2);
 
   // Draw space key (4x width)
   drawKey(' ', 400, 600, keySize * 4);
@@ -412,8 +416,12 @@ int getHoveredSuggestionIndex() {
 }
 
 void drawEnterKey(int x, int y) {
+  drawEnterKey(x, y, keySize);
+}
+
+void drawEnterKey(int x, int y, int width) {
   // Check if mouse is over the enter key
-  boolean mouseOverEnter = mouseOverKey(x, y, keySize);
+  boolean mouseOverEnter = mouseOverKey(x, y, width);
 
   // Draw key with color based on hover
   if (mouseOverEnter) {
@@ -421,13 +429,13 @@ void drawEnterKey(int x, int y) {
   } else {
     fill(200);
   }
-  rect(x, y, keySize, keySize, 5);
+  rect(x, y, width, keySize, 5);
 
   // Draw text
   fill(0);
   textSize(24);  // Smaller text size to fit the word
   textAlign(CENTER, CENTER);
-  text("ENTER", x + keySize/2, y + keySize/2);
+  text("ENTER", x + width/2, y + keySize/2);
 }
 
 void mousePressed() {
@@ -452,6 +460,8 @@ void mousePressed() {
       char clickedChar = currentSuggestions[hoveredIndex];
       clickedChar = isUpperCase ? Character.toUpperCase(clickedChar) : Character.toLowerCase(clickedChar);
       typedText += clickedChar;
+      numCharTyped++;
+      checkMistake(clickedChar, typedText.length() - 1);
       // Update suggestions based on new context
       currentSuggestions = predictor.getPredictions(typedText);
       lastPressedKeyChar = Character.toUpperCase(clickedChar);
@@ -476,6 +486,8 @@ void mousePressed() {
         char typedChar = keys[row].charAt(col);
         typedChar = isUpperCase ? typedChar : Character.toLowerCase(typedChar);
         typedText += typedChar;
+        numCharTyped++;
+        checkMistake(typedChar, typedText.length() - 1);
         lastPressedKeyChar = Character.toUpperCase(keys[row].charAt(col));
         lastPressedKeyX = x;
         lastPressedKeyY = y;
@@ -489,6 +501,8 @@ void mousePressed() {
   // 3. Handle Space Key
   if (mouseOverKey(400, 600, keySize * 4, keySize)) {
     typedText += " ";
+    numCharTyped++;
+    checkMistake(' ', typedText.length() - 1);
     currentSuggestions = null;
     if (!timing && typedText.trim().length() > 0) {
       startTime = millis();
@@ -500,7 +514,7 @@ void mousePressed() {
   }
 
   // 4. Handle Backspace Key
-  if (mouseOverKey(200 + 10 * keySize + (0 * keySize / 2), 300, keySize) && typedText.length() > 0) {
+  if (mouseOverKey(200 + 10 * keySize + (0 * keySize / 2), 300, keySize * 2, keySize) && typedText.length() > 0) {
     typedText = typedText.substring(0, typedText.length() - 1);
     currentSuggestions = null;
     if (typedText.length() == 0) {
@@ -510,7 +524,7 @@ void mousePressed() {
   }
 
   // 5. Handle Enter Key
-  if (mouseOverKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize, keySize)) {
+  if (mouseOverKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize, keySize * 2)) {
     if (timing) {
       endTime = millis();
       evaluatePerformance();
@@ -529,16 +543,21 @@ boolean mouseOverKey(int x, int y, int width, int height) {
   return mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height;
 }
 
-float calculateWPM(int timeInSeconds, int correctChars, float accuracy) {
-  // Standard WPM calculation: (characters / 5) / (minutes)
-  float words = correctChars / 5.0;
-  float minutes = timeInSeconds / 60.0;
-  float wpm = minutes > 0 ? words / minutes : 0;
-  // Adjust WPM by accuracy
-  return wpm * (accuracy / 100.0);
+void checkMistake(char input, int index) {
+  if (targetText.length() - 1 < index || input != targetText.charAt(index) ) {
+    numMistakes++;
+  }
 }
 
-int levenshteinDistance(String s1, String s2) {
+float calculateWPM(int timeInSeconds, int correctChars) {
+  // Standard WPM calculation: (characters / 5) / (minutes)
+  float words = (float) correctChars / 5.0;
+  float minutes = (float) timeInSeconds / 60.0;
+  float wpm = minutes > 0 ? words / minutes : 0;
+  return wpm;
+}
+
+int minimumStringDistance(String s1, String s2) {
   int[][] dp = new int[s1.length() + 1][s2.length() + 1];
 
   for (int i = 0; i <= s1.length(); i++) {
@@ -561,7 +580,8 @@ int levenshteinDistance(String s1, String s2) {
 }
 
 void savePerformanceData(String typedText, String targetText, long startTime, long endTime,
-                        int timeTaken, float accuracy, float awpm, int distance) {
+                        int timeTaken, float accuracy, float wpm, float awpm, int totalCorrectChars,
+                        int totalIncorrectChars, int distance) {
   try {
     PrintWriter output = createWriter("typing_performance.txt");
     output.println("Timestamp: " + new Date().toString());
@@ -571,8 +591,11 @@ void savePerformanceData(String typedText, String targetText, long startTime, lo
     output.println("End Time: " + endTime);
     output.println("Time Taken (seconds): " + timeTaken);
     output.println("Accuracy: " + nf(accuracy, 0, 2) + "%");
+    output.println("Words Per Minute: " + nf(wpm, 0, 2));
     output.println("Adjusted Words Per Minute: " + nf(awpm, 0, 2));
-    output.println("Levenshtein Distance: " + distance);
+    output.println("Number of Correct Characters: " + totalCorrectChars);
+    output.println("Number of Incorrect Characters: " + totalIncorrectChars);
+    output.println("Minimum String Distance: " + distance);
     output.println("----------------------------------------");
     output.flush();
     output.close();
@@ -584,34 +607,54 @@ void savePerformanceData(String typedText, String targetText, long startTime, lo
 void evaluatePerformance() {
   if (startTime == 0) return; // Avoid issues if enter is pressed before typing
   int timeTaken = (int) ((endTime - startTime) / 1000.0);
-  int correctChars = 0;
-  int minLen = min(typedText.length(), targetText.length());
+  int totalCorrectChars = 0;
+  int totalIncorrectChars = 0;
 
+  // Calculate correct and incorrect characters
+  int minLen = min(typedText.length(), targetText.length());
   for (int i = 0; i < minLen; i++) {
     if (typedText.charAt(i) == targetText.charAt(i)) {
-      correctChars++;
+      totalCorrectChars++;
+    } else {
+      totalIncorrectChars++;
     }
   }
 
-  float accuracy = 0;
-  if (targetText.length() > 0) {
-    accuracy = (correctChars / (float) targetText.length()) * 100;
+  // Add remaining characters as incorrect
+  if (typedText.length() > targetText.length()) {
+    totalIncorrectChars += (typedText.length() - targetText.length());
   }
 
-  // Calculate adjusted WPM and Levenshtein distance
-  float awpm = calculateWPM(timeTaken, correctChars, accuracy);
-  int distance = levenshteinDistance(typedText, targetText);
+  int fixedMistakes = numMistakes - totalIncorrectChars;
+
+
+  float accuracy = 0;
+  if (targetText.length() > 0) {
+    accuracy = (totalCorrectChars / (float) targetText.length()) * 100;
+  }
+
+  // Calculate (A)WPM and Minimum String distance
+  float wpm = calculateWPM(timeTaken, numCharTyped);
+  float awpmAccuracy = (1.0 - (fixedMistakes / (float) typedText.length()));
+  float awpm = wpm * awpmAccuracy;
+  int distance = minimumStringDistance(typedText, targetText);
 
   // Print performance metrics
   println("Time taken: " + timeTaken + "s");
   println("Accuracy: " + nf(accuracy, 0, 2) + "%");
+
+  println("Words Per Minute: " + nf(wpm, 0, 2));
   println("Adjusted Words Per Minute: " + nf(awpm, 0, 2));
-  println("Levenshtein Distance: " + distance);
+  println("Total Correct Characters: " + totalCorrectChars);
+  println("Total Incorrect Characters: " + totalIncorrectChars);
+  println("Minimum String Distance: " + distance);
 
   // Save performance data to file
-  savePerformanceData(typedText, targetText, startTime, endTime, timeTaken, accuracy, awpm, distance);
+  savePerformanceData(typedText, targetText, startTime, endTime, timeTaken, accuracy, wpm, awpm, totalCorrectChars, totalIncorrectChars,distance);
 
   startTime = 0; // Reset startTime for the next round
+  numMistakes = 0;
+  numCharTyped = 0;
 }
 
 void mouseMoved() {
