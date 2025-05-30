@@ -1,6 +1,6 @@
 import java.util.*;
 import java.io.*;
-
+int trialCount = 1;
 // N-gram predictor class
 class NgramPredictor {
     private int n;
@@ -604,6 +604,21 @@ void savePerformanceData(String typedText, String targetText, long startTime, lo
   }
 }
 
+void savePerformanceToTextFile(String logEntry) {
+  PrintWriter output = createWriter("performance_log.txt");
+  String[] existing = {};
+  if (dataFile("performance_log.txt").exists()) {
+    existing = loadStrings("performance_log.txt");
+  }
+  output = createWriter("performance_log.txt");
+  for (String line : existing) {
+    output.println(line);
+  }
+  output.println(logEntry);
+  output.flush();
+  output.close();
+}
+
 void evaluatePerformance() {
   if (startTime == 0) return; // Avoid issues if enter is pressed before typing
   int timeTaken = (int) ((endTime - startTime) / 1000.0);
@@ -638,8 +653,9 @@ void evaluatePerformance() {
   float awpmAccuracy = (1.0 - (fixedMistakes / (float) typedText.length()));
   float awpm = wpm * awpmAccuracy;
   int distance = minimumStringDistance(typedText, targetText);
-
   // Print performance metrics
+  println("Trial: " + trialCount);
+  trialCount++;
   println("Time taken: " + timeTaken + "s");
   println("Accuracy: " + nf(accuracy, 0, 2) + "%");
 
@@ -648,6 +664,8 @@ void evaluatePerformance() {
   println("Total Correct Characters: " + totalCorrectChars);
   println("Total Incorrect Characters: " + totalIncorrectChars);
   println("Minimum String Distance: " + distance);
+  println(""); // Empty line for spacing
+  
 
   // Save performance data to file
   savePerformanceData(typedText, targetText, startTime, endTime, timeTaken, accuracy, wpm, awpm, totalCorrectChars, totalIncorrectChars,distance);
@@ -655,6 +673,21 @@ void evaluatePerformance() {
   startTime = 0; // Reset startTime for the next round
   numMistakes = 0;
   numCharTyped = 0;
+  
+  String logEntry = "Trial: " + trialCount + "\n"
+  + "Time taken: " + timeTaken + "s\n"
+  + "Accuracy: " + nf(accuracy, 0, 2) + "%\n"
+  + "Words Per Minute: " + nf(wpm, 0, 2) + "\n"
+  + "Adjusted Words Per Minute: " + nf(awpm, 0, 2) + "\n"
+  + "Total Correct Characters: " + totalCorrectChars + "\n"
+  + "Total Incorrect Characters: " + totalIncorrectChars + "\n"
+  + "Minimum String Distance: " + distance + "\n"
+  + "Typed Text: " + typedText + "\n"
+  + "Target Text: " + targetText + "\n"
+  + "---------------------------------------";
+
+  savePerformanceToTextFile(logEntry);
+
 }
 
 void mouseMoved() {
