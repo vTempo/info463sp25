@@ -1,12 +1,12 @@
-Timestamp: Thu May 29 15:37:12 PDT 2025
-Target Text: THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG
-Typed Text: THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG
-Start Time: 55327
-End Time: 99530
-Time Taken (seconds): 44
+Timestamp: Fri May 30 09:16:06 PDT 2025
+Target Text: They danced all night under the glowing moon
+Typed Text: They danced all night under the glowing moon
+Start Time: 1771
+End Time: 38799
+Time Taken (seconds): 37
 Accuracy: 100.00%
-Words Per Minute: 12.00
-Adjusted Words Per Minute: 12.00
+Words Per Minute: 14.59
+Adjusted Words Per Minute: 14.26
 Number of Correct Characters: 44
 Number of Incorrect Characters: 0
 Minimum String Distance: 0
