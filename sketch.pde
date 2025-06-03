@@ -1,11 +1,68 @@
 import java.util.*;
 import java.io.*;
-int trialCount = 1;
+
+// Trial management variables
+int currentTrial = 0;
+int totalTrials = 20;
+boolean testComplete = false;
+ArrayList<TrialResult> trialResults = new ArrayList<TrialResult>();
+
+// Target sentences for the 20 trials
+String[] targetSentences = {
+  "She packed twelve blue pens in her small bag.",
+  "Every bird sang sweet songs in the quiet dawn.",
+  "They watched clouds drift across the golden sky.",
+  "A clever mouse slipped past the sleepy cat.",
+  "Green leaves danced gently in the warm breeze.",
+  "He quickly wrote notes before the test began.",
+  "The tall man wore boots made of soft leather.",
+  "Old clocks ticked loudly in the silent room.",
+  "She smiled while sipping tea on the front porch.",
+  "We found a hidden path behind the old barn.",
+  "Sunlight streamed through cracks in the ceiling.",
+  "Dogs barked at shadows moving through the yard.",
+  "Rain tapped softly against the window glass.",
+  "Bright stars twinkled above the quiet valley.",
+  "He tied the package with ribbon and string.",
+  "A sudden breeze blew papers off the desk.",
+  "The curious child opened every single drawer.",
+  "Fresh apples fell from the heavy tree limbs.",
+  "The artist painted scenes from her memory.",
+  "They danced all night under the glowing moon."
+};
+
+// Class to store trial results
+class TrialResult {
+  int trialNumber;
+  String targetText;
+  String typedText;
+  long timeTaken;
+  float accuracy;
+  float wpm;
+  float awpm;
+  int correctChars;
+  int incorrectChars;
+  int msd;
+  
+  TrialResult(int trial, String target, String typed, long time, float acc, float w, float aw, int correct, int incorrect, int distance) {
+    trialNumber = trial;
+    targetText = target;
+    typedText = typed;
+    timeTaken = time;
+    accuracy = acc;
+    wpm = w;
+    awpm = aw;
+    correctChars = correct;
+    incorrectChars = incorrect;
+    msd = distance;
+  }
+}
+
 // N-gram predictor class
 class NgramPredictor {
     private int n;
     private String text;
-    private Map<String, String> seeds;  // Maps n-1 length sequences to possible next chars
+    private Map<String, String> seeds;
     private String currentSeed;
     private boolean initialized;
 
@@ -20,14 +77,11 @@ class NgramPredictor {
     }
 
     private void loadCorpus() {
-        // Load text from file
-
         text = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG THR";
-        // String[] lines = loadStrings("sample.txt");
-        // String[] lines = loadStrings("eng-uk_web-public_2018_10K-sentences.txt");
-        // String[] lines = loadStrings("eng_news_2024_30K-sentences.txt");
         String[] lines = loadStrings("pg1342.txt");
-        text = String.join(" ", lines);
+        if (lines != null) {
+          text = String.join(" ", lines);
+        }
 
         // Convert all text to uppercase and filter to only letters and spaces
         StringBuilder filteredText = new StringBuilder();
@@ -79,8 +133,11 @@ class NgramPredictor {
         // Get possible next characters for this seed
         String possibleNext = seeds.get(seed);
         if (possibleNext == null || possibleNext.isEmpty()) {
-          char lastChar = context.charAt(context.length() - 1);
-          return keySuggestions.get(Character.toUpperCase(lastChar));
+          if (context.length() > 0) {
+            char lastChar = context.charAt(context.length() - 1);
+            return keySuggestions.get(Character.toUpperCase(lastChar));
+          }
+          return new Character[4];
         }
 
         // Use a Set to track unique characters
@@ -107,7 +164,7 @@ class NgramPredictor {
                     // Only add if not already in predictions
                     boolean alreadyExists = false;
                     for (int j = 0; j < i; j++) {
-                        if (predictions[j] == c) {
+                        if (predictions[j] != null && predictions[j].equals(c)) {
                             alreadyExists = true;
                             break;
                         }
@@ -123,9 +180,9 @@ class NgramPredictor {
     }
 }
 
-int keySize = 100;  // Doubled from 50
+int keySize = 100;
 String typedText = "";
-String targetText = "THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG";
+String targetText = "";
 String[] keys = {
   "QWERTYUIOP",
   "ASDFGHJKL",
@@ -141,16 +198,16 @@ NgramPredictor predictor;
 Character[] currentSuggestions = null;
 char lastPressedKeyChar = '\0';
 int lastPressedKeyX, lastPressedKeyY;
-int suggestionKeySize = 100;  // Doubled from 50
-int suggestionSpacing = 20;  // Doubled from 10
+int suggestionKeySize = 100;
+int suggestionSpacing = 20;
 float suggestionKeySizeHoverFactor = 1.5;
 
 // Case toggle variables
-boolean isUpperCase = false;  // Start in lowercase mode
-boolean hasEnteredToggleArea = false;  // Track if mouse has ever entered toggle area
-int caseToggleX = 1400;  // Position in bottom right corner
-int caseToggleY = 550;   // Moved up 150 pixels from 700
-int caseToggleSize = 160;  // Doubled from 80
+boolean isUpperCase = false;
+boolean hasEnteredToggleArea = false;
+int caseToggleX = 1400;
+int caseToggleY = 550;
+int caseToggleSize = 160;
 
 boolean timing = false;
 long startTime, endTime;
@@ -158,7 +215,7 @@ int numMistakes;
 int numCharTyped;
 
 void setup() {
-  size(1600, 800);  // Doubled from 800, 400
+  size(1600, 800);
 
   keySuggestions.put('A', new Character[] {'N', 'L', 'S', 'T'});
   keySuggestions.put('B', new Character[] {'E', 'L', 'R', 'A'});
@@ -187,28 +244,41 @@ void setup() {
   keySuggestions.put('Y', new Character[] {'S', 'E', 'O', 'T'});
   keySuggestions.put('Z', new Character[] {'E', 'A', 'O', 'I'});
 
-  predictor = new NgramPredictor(4);  // Using 4-grams
+  predictor = new NgramPredictor(4);
   numMistakes = 0;
   numCharTyped = 0;
+  
+  // Initialize first trial
+  targetText = targetSentences[currentTrial];
 }
 
 void draw() {
   background(240);
 
-  fill(100, 0, 0);
-  textSize(48);  // Doubled from 24
+  if (testComplete) {
+    drawSummaryScreen();
+    return;
+  }
+
+  // Draw trial counter
+  fill(0, 0, 100);
+  textSize(32);
   textAlign(LEFT);
-  text("Target: " + targetText, 100, 80);  // Doubled from 50, 40
+  text("Trial " + (currentTrial + 1) + " of " + totalTrials, 100, 40);
+
+  fill(100, 0, 0);
+  textSize(48);
+  textAlign(LEFT);
+  text("Target: " + targetText, 100, 80);
 
   fill(0);
   textAlign(LEFT);
-  text("Typed: " + typedText, 100, 140);  // Doubled from 50, 70
+  text("Typed: " + typedText, 100, 140);
 
   // Draw keyboard
   for (int row = 0; row < keys.length; row++) {
     for (int col = 0; col < keys[row].length(); col++) {
       char keyChar = keys[row].charAt(col);
-      // Convert to lowercase if not in uppercase mode
       if (!isUpperCase) {
         keyChar = Character.toLowerCase(keyChar);
       }
@@ -216,13 +286,13 @@ void draw() {
     }
   }
 
-  // Draw backspace key (after P)
+  // Draw backspace key
   drawKey('<', 200 + 10 * keySize + (0 * keySize / 2), 300, keySize * 2);
 
-  // Draw enter key (after L)
+  // Draw enter key
   drawEnterKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize, keySize * 2);
 
-  // Draw space key (4x width)
+  // Draw space key
   drawKey(' ', 400, 600, keySize * 4);
 
   // Draw case toggle button
@@ -233,13 +303,11 @@ void draw() {
     float keyCenterX = lastPressedKeyX + keySize / 2.0f;
     float keyCenterY = lastPressedKeyY + keySize / 2.0f;
 
-    // Calculate the bounding box that includes all keys and their hover areas
     float minX = lastPressedKeyX - suggestionSpacing - suggestionKeySize;
     float maxX = lastPressedKeyX + keySize + suggestionSpacing + suggestionKeySize;
     float minY = lastPressedKeyY - suggestionSpacing - suggestionKeySize;
     float maxY = lastPressedKeyY + keySize + suggestionSpacing + suggestionKeySize;
 
-    // Check if mouse is within the bounding box
     boolean mouseInBounds = (mouseX >= minX && mouseX <= maxX &&
                            mouseY >= minY && mouseY <= maxY);
 
@@ -249,6 +317,89 @@ void draw() {
       currentSuggestions = null;
     }
   }
+  
+  boolean isHoveringShift = (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
+                             mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize);
+  
+  if (isHoveringShift && !hasEnteredToggleArea) {
+    // Just entered hover area → toggle
+    isUpperCase = !isUpperCase;
+    hasEnteredToggleArea = true;
+  } else if (!isHoveringShift && hasEnteredToggleArea) {
+    // Left hover area → allow re-toggle next time
+    hasEnteredToggleArea = false;
+  }
+}
+
+void drawSummaryScreen() {
+  background(220, 230, 255);
+  
+  fill(0, 0, 150);
+  textSize(64);
+  textAlign(CENTER);
+  text("Test Complete!", width/2, 80);
+  
+  textSize(32);
+  text("Summary of All 20 Trials", width/2, 130);
+  
+  // Calculate overall statistics
+  float totalAWPM = 0;
+  float totalAccuracy = 0;
+  int totalMSD = 0;
+  long totalTime = 0;
+  
+  for (TrialResult result : trialResults) {
+    totalAWPM += result.awpm;
+    totalAccuracy += result.accuracy;
+    totalMSD += result.msd;
+    totalTime += result.timeTaken;
+  }
+  
+  float avgAWPM = totalAWPM / trialResults.size();
+  float avgAccuracy = totalAccuracy / trialResults.size();
+  float avgMSD = (float)totalMSD / trialResults.size();
+  float avgTime = (float)totalTime / trialResults.size();
+  
+  // Draw overall statistics
+  fill(0);
+  textSize(28);
+  textAlign(LEFT);
+  int yPos = 200;
+  
+  text("Overall Performance:", 100, yPos);
+  yPos += 40;
+  text("Average Adjusted WPM: " + nf(avgAWPM, 0, 2), 120, yPos);
+  yPos += 35;
+  text("Average Accuracy: " + nf(avgAccuracy, 0, 2) + "%", 120, yPos);
+  yPos += 35;
+  text("Average MSD: " + nf(avgMSD, 0, 2), 120, yPos);
+  yPos += 35;
+  text("Average Time: " + nf(avgTime/1000.0, 0, 2) + "s", 120, yPos);
+  
+  // Draw trial-by-trial results
+  yPos += 60;
+  textSize(24);
+  text("Trial Results:", 100, yPos);
+  yPos += 30;
+  
+  textSize(18);
+  for (int i = 0; i < min(trialResults.size(), 10); i++) {
+    TrialResult result = trialResults.get(i);
+    String trialLine = "Trial " + (i+1) + ": AWPM=" + nf(result.awpm, 0, 1) + 
+                      ", Acc=" + nf(result.accuracy, 0, 1) + "%, MSD=" + result.msd;
+    text(trialLine, 120, yPos);
+    yPos += 25;
+  }
+  
+  if (trialResults.size() > 10) {
+    text("... and " + (trialResults.size() - 10) + " more trials", 120, yPos);
+  }
+  
+  // Instructions to restart
+  fill(100, 0, 0);
+  textSize(24);
+  textAlign(CENTER);
+  text("Press 'R' to restart the test", width/2, height - 50);
 }
 
 void drawKey(char label, int x, int y) {
@@ -256,7 +407,6 @@ void drawKey(char label, int x, int y) {
 }
 
 void drawKey(char label, int x, int y, int width) {
-  // Check if mouse is over any suggestion key first
   boolean mouseOverSuggestion = false;
   if (currentSuggestions != null) {
     int hoveredIndex = getHoveredSuggestionIndex();
@@ -265,7 +415,6 @@ void drawKey(char label, int x, int y, int width) {
     }
   }
 
-  // Only highlight regular key if mouse is not over any suggestion
   if (mouseOverKey(x, y, width, keySize) && !mouseOverSuggestion) {
     fill(150);
   } else {
@@ -280,17 +429,14 @@ void drawKey(char label, int x, int y, int width) {
 }
 
 void drawCaseToggleButton() {
-  // Check if mouse is over the case toggle button
   boolean mouseOverToggle = (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
                            mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize);
 
-  // Draw button with color based on state
   fill(isUpperCase ? 150 : 180);
   rect(caseToggleX, caseToggleY, caseToggleSize, caseToggleSize, 10);
 
-  // Draw text
   fill(0);
-  textSize(40);  // Doubled from 20
+  textSize(40);
   textAlign(CENTER, CENTER);
   text(isUpperCase ? "ABC" : "abc", caseToggleX + caseToggleSize/2, caseToggleY + caseToggleSize/2);
 }
@@ -305,7 +451,6 @@ void drawSuggestionKeys() {
   float keyCenterX = lastPressedKeyX + keySize / 2.0f;
   float keyCenterY = lastPressedKeyY + keySize / 2.0f;
 
-  // Define base positions (Top, Right, Bottom, Left)
   float[] baseXs = new float[4];
   float[] baseYs = new float[4];
 
@@ -327,7 +472,6 @@ void drawSuggestionKeys() {
   for (int i = 0; i < currentSuggestions.length && i < 4; i++) {
     if (currentSuggestions[i] == null) continue;
     char suggestionChar = currentSuggestions[i];
-    // Convert suggestion character to current case
     suggestionChar = isUpperCase ? Character.toUpperCase(suggestionChar) : Character.toLowerCase(suggestionChar);
     float baseX = baseXs[i];
     float baseY = baseYs[i];
@@ -345,24 +489,20 @@ void drawSuggestionKeys() {
       currentDrawSize = actualSuggestionKeySizeHover;
       drawX = baseKeyCenterX - currentDrawSize / 2.0f;
       drawY = baseKeyCenterY - currentDrawSize / 2.0f;
-      fill(170); // Highlight for hovered suggestion key
+      fill(170);
     } else {
-      fill(220); // Default color for suggestion key
+      fill(220);
     }
     rect(drawX, drawY, currentDrawSize, currentDrawSize, 100);
 
     fill(0);
-    textSize(currentDrawSize * 0.6f); // Scale text size
+    textSize(currentDrawSize * 0.6f);
     textAlign(CENTER, CENTER);
-    // Display underscore for space character, but keep the original character for functionality
     char displayChar = suggestionChar == ' ' ? '_' : suggestionChar;
-    text(displayChar, baseKeyCenterX, baseKeyCenterY); // Text centered on original base key center
+    text(displayChar, baseKeyCenterX, baseKeyCenterY);
   }
 }
 
-/**
- * Returns the index of the hovered suggestion key (0-3), or -1 if none hovered.
- */
 int getHoveredSuggestionIndex() {
   if (currentSuggestions == null) return -1;
 
@@ -395,16 +535,14 @@ int getHoveredSuggestionIndex() {
     float baseKeyCenterX = baseXs[i] + suggestionKeySize / 2.0f;
     float baseKeyCenterY = baseYs[i] + suggestionKeySize / 2.0f;
 
-    // Check if mouse is within the hover bounding box
     if (mouseX >= baseKeyCenterX - actualSuggestionKeySizeHover / 2.0f &&
         mouseX <= baseKeyCenterX + actualSuggestionKeySizeHover / 2.0f &&
         mouseY >= baseKeyCenterY - actualSuggestionKeySizeHover / 2.0f &&
         mouseY <= baseKeyCenterY + actualSuggestionKeySizeHover / 2.0f) {
 
-      // Calculate distance from mouse to key center
       float dx = mouseX - baseKeyCenterX;
       float dy = mouseY - baseKeyCenterY;
-      float dist = dx * dx + dy * dy; // squared distance is enough
+      float dist = dx * dx + dy * dy;
 
       if (dist < closestDist) {
         closestDist = dist;
@@ -420,10 +558,8 @@ void drawEnterKey(int x, int y) {
 }
 
 void drawEnterKey(int x, int y, int width) {
-  // Check if mouse is over the enter key
   boolean mouseOverEnter = mouseOverKey(x, y, width);
 
-  // Draw key with color based on hover
   if (mouseOverEnter) {
     fill(100);
   } else {
@@ -431,28 +567,23 @@ void drawEnterKey(int x, int y, int width) {
   }
   rect(x, y, width, keySize, 5);
 
-  // Draw text
   fill(0);
-  textSize(24);  // Smaller text size to fit the word
+  textSize(24);
   textAlign(CENTER, CENTER);
   text("ENTER", x + width/2, y + keySize/2);
 }
 
 void mousePressed() {
-  // Clear suggestions if right mouse button is pressed
+  if (testComplete) {
+    return; // Ignore mouse clicks on summary screen
+  }
+
   if (mouseButton == RIGHT) {
     currentSuggestions = null;
     return;
   }
 
-  // Check for case toggle button click first
-  if (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
-      mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize) {
-    isUpperCase = !isUpperCase;
-    return;
-  }
-
-  // 1. Handle Suggestion Key Clicks first
+  // Handle Suggestion Key Clicks first
   if (currentSuggestions != null) {
     int hoveredIndex = getHoveredSuggestionIndex();
 
@@ -462,7 +593,6 @@ void mousePressed() {
       typedText += clickedChar;
       numCharTyped++;
       checkMistake(clickedChar, typedText.length() - 1);
-      // Update suggestions based on new context
       currentSuggestions = predictor.getPredictions(typedText);
       lastPressedKeyChar = Character.toUpperCase(clickedChar);
       if (!timing && typedText.length() > 0) {
@@ -473,7 +603,7 @@ void mousePressed() {
     }
   }
 
-  // 2. Handle Main QWERTY Key Clicks
+  // Handle Main QWERTY Key Clicks
   for (int row = 0; row < keys.length; row++) {
     for (int col = 0; col < keys[row].length(); col++) {
       int x = 200 + col * keySize + (row * keySize / 2);
@@ -491,14 +621,13 @@ void mousePressed() {
         lastPressedKeyChar = Character.toUpperCase(keys[row].charAt(col));
         lastPressedKeyX = x;
         lastPressedKeyY = y;
-        // Update suggestions based on new context
         currentSuggestions = predictor.getPredictions(typedText);
         return;
       }
     }
   }
 
-  // 3. Handle Space Key
+  // Handle Space Key
   if (mouseOverKey(400, 600, keySize * 4, keySize)) {
     typedText += " ";
     numCharTyped++;
@@ -513,7 +642,7 @@ void mousePressed() {
     return;
   }
 
-  // 4. Handle Backspace Key
+  // Handle Backspace Key
   if (mouseOverKey(200 + 10 * keySize + (0 * keySize / 2), 300, keySize * 2, keySize) && typedText.length() > 0) {
     typedText = typedText.substring(0, typedText.length() - 1);
     currentSuggestions = null;
@@ -523,15 +652,48 @@ void mousePressed() {
     return;
   }
 
-  // 5. Handle Enter Key
+  // Handle Enter Key
   if (mouseOverKey(200 + 9 * keySize + (1 * keySize / 2), 300 + keySize, keySize * 2)) {
     if (timing) {
       endTime = millis();
       evaluatePerformance();
+      moveToNextTrial();
     }
-    timing = false;
+    return;
+  }
+}
+
+void moveToNextTrial() {
+  currentTrial++;
+  
+  if (currentTrial >= totalTrials) {
+    testComplete = true;
+    saveFinalResults();
+  } else {
+    // Reset for next trial
+    targetText = targetSentences[currentTrial];
     typedText = "";
+    timing = false;
     currentSuggestions = null;
+    numMistakes = 0;
+    numCharTyped = 0;
+    startTime = 0;
+  }
+}
+
+void keyPressed() {
+  if (testComplete && (key == 'r' || key == 'R')) {
+    // Restart the test
+    currentTrial = 0;
+    testComplete = false;
+    trialResults.clear();
+    targetText = targetSentences[currentTrial];
+    typedText = "";
+    timing = false;
+    currentSuggestions = null;
+    numMistakes = 0;
+    numCharTyped = 0;
+    startTime = 0;
   }
 }
 
@@ -550,12 +712,12 @@ void checkMistake(char input, int index) {
 }
 
 float calculateWPM(int timeInSeconds, int correctChars) {
-  // Standard WPM calculation: (characters / 5) / (minutes)
   float words = (float) correctChars / 5.0;
   float minutes = (float) timeInSeconds / 60.0;
   float wpm = minutes > 0 ? words / minutes : 0;
   return wpm;
 }
+
 
 int minimumStringDistance(String s1, String s2) {
   int[][] dp = new int[s1.length() + 1][s2.length() + 1];
@@ -569,137 +731,91 @@ int minimumStringDistance(String s1, String s2) {
 
   for (int i = 1; i <= s1.length(); i++) {
     for (int j = 1; j <= s2.length(); j++) {
-      if (s1.charAt(i-1) == s2.charAt(j-1)) {
-        dp[i][j] = dp[i-1][j-1];
+      if (s1.charAt(i - 1) == s2.charAt(j - 1)) {
+        dp[i][j] = dp[i - 1][j - 1];
       } else {
-        dp[i][j] = 1 + min(dp[i-1][j-1], min(dp[i-1][j], dp[i][j-1]));
+        dp[i][j] = 1 + myMin(
+          dp[i - 1][j - 1], // substitution
+          dp[i - 1][j],     // deletion
+          dp[i][j - 1]      // insertion
+        );
       }
     }
   }
+
   return dp[s1.length()][s2.length()];
 }
 
-void savePerformanceData(String typedText, String targetText, long startTime, long endTime,
-                        int timeTaken, float accuracy, float wpm, float awpm, int totalCorrectChars,
-                        int totalIncorrectChars, int distance) {
-  try {
-    PrintWriter output = createWriter("typing_performance.txt");
-    output.println("Timestamp: " + new Date().toString());
-    output.println("Target Text: " + targetText);
-    output.println("Typed Text: " + typedText);
-    output.println("Start Time: " + startTime);
-    output.println("End Time: " + endTime);
-    output.println("Time Taken (seconds): " + timeTaken);
-    output.println("Accuracy: " + nf(accuracy, 0, 2) + "%");
-    output.println("Words Per Minute: " + nf(wpm, 0, 2));
-    output.println("Adjusted Words Per Minute: " + nf(awpm, 0, 2));
-    output.println("Number of Correct Characters: " + totalCorrectChars);
-    output.println("Number of Incorrect Characters: " + totalIncorrectChars);
-    output.println("Minimum String Distance: " + distance);
-    output.println("----------------------------------------");
-    output.flush();
-    output.close();
-  } catch (Exception e) {
-    println("Error saving performance data: " + e.getMessage());
-  }
-}
 
-void savePerformanceToTextFile(String logEntry) {
-  PrintWriter output = createWriter("performance_log.txt");
-  String[] existing = {};
-  if (dataFile("performance_log.txt").exists()) {
-    existing = loadStrings("performance_log.txt");
-  }
-  output = createWriter("performance_log.txt");
-  for (String line : existing) {
-    output.println(line);
-  }
-  output.println(logEntry);
-  output.flush();
-  output.close();
+int myMin(int a, int b, int c) {
+  return min(a, min(b, c));  // Uses PApplet's min function
 }
 
 void evaluatePerformance() {
-  if (startTime == 0) return; // Avoid issues if enter is pressed before typing
-  int timeTaken = (int) ((endTime - startTime) / 1000.0);
-  int totalCorrectChars = 0;
-  int totalIncorrectChars = 0;
+  if (startTime == 0) return;
 
-  // Calculate correct and incorrect characters
-  int minLen = min(typedText.length(), targetText.length());
-  for (int i = 0; i < minLen; i++) {
-    if (typedText.charAt(i) == targetText.charAt(i)) {
-      totalCorrectChars++;
-    } else {
-      totalIncorrectChars++;
+  String typed = typedText.trim();
+  String target = targetText.trim();
+  int correctChars = 0;
+
+  for (int i = 0; i < min(typed.length(), target.length()); i++) {
+    if (typed.charAt(i) == target.charAt(i)) {
+      correctChars++;
     }
   }
 
-  // Add remaining characters as incorrect
-  if (typedText.length() > targetText.length()) {
-    totalIncorrectChars += (typedText.length() - targetText.length());
-  }
+  int incorrectChars = typed.length() - correctChars;
+  int msd = minimumStringDistance(target, typed);
+  long timeTaken = endTime - startTime;
+  float timeInSeconds = timeTaken / 1000.0f;
+  float rawWPM = calculateWPM((int) timeInSeconds, typed.length());
+  float accuracy = typed.length() > 0 ? ((float) correctChars / typed.length()) * 100 : 0;
+  float adjustedWPM = rawWPM * (accuracy / 100.0f);
 
-  int fixedMistakes = numMistakes - totalIncorrectChars;
+  TrialResult result = new TrialResult(
+    currentTrial + 1,
+    target,
+    typed,
+    timeTaken,
+    accuracy,
+    rawWPM,
+    adjustedWPM,
+    correctChars,
+    incorrectChars,
+    msd
+  );
+  trialResults.add(result);
 
-
-  float accuracy = 0;
-  if (targetText.length() > 0) {
-    accuracy = (totalCorrectChars / (float) targetText.length()) * 100;
-  }
-
-  // Calculate (A)WPM and Minimum String distance
-  float wpm = calculateWPM(timeTaken, numCharTyped);
-  float awpmAccuracy = (1.0 - (fixedMistakes / (float) typedText.length()));
-  float awpm = wpm * awpmAccuracy;
-  int distance = minimumStringDistance(typedText, targetText);
-  // Print performance metrics
-  println("Trial: " + trialCount);
-  trialCount++;
-  println("Time taken: " + timeTaken + "s");
-  println("Accuracy: " + nf(accuracy, 0, 2) + "%");
-
-  println("Words Per Minute: " + nf(wpm, 0, 2));
-  println("Adjusted Words Per Minute: " + nf(awpm, 0, 2));
-  println("Total Correct Characters: " + totalCorrectChars);
-  println("Total Incorrect Characters: " + totalIncorrectChars);
-  println("Minimum String Distance: " + distance);
-  println(""); // Empty line for spacing
-  
-
-  // Save performance data to file
-  savePerformanceData(typedText, targetText, startTime, endTime, timeTaken, accuracy, wpm, awpm, totalCorrectChars, totalIncorrectChars,distance);
-
-  startTime = 0; // Reset startTime for the next round
-  numMistakes = 0;
-  numCharTyped = 0;
-  
-  String logEntry = "Trial: " + trialCount + "\n"
-  + "Time taken: " + timeTaken + "s\n"
-  + "Accuracy: " + nf(accuracy, 0, 2) + "%\n"
-  + "Words Per Minute: " + nf(wpm, 0, 2) + "\n"
-  + "Adjusted Words Per Minute: " + nf(awpm, 0, 2) + "\n"
-  + "Total Correct Characters: " + totalCorrectChars + "\n"
-  + "Total Incorrect Characters: " + totalIncorrectChars + "\n"
-  + "Minimum String Distance: " + distance + "\n"
-  + "Typed Text: " + typedText + "\n"
-  + "Target Text: " + targetText + "\n"
-  + "---------------------------------------";
-
-  savePerformanceToTextFile(logEntry);
-
+  // Save immediately to file after each trial
+  saveFinalResults();
 }
 
-void mouseMoved() {
-  // Check if mouse is over the case toggle button
-  boolean mouseOverToggle = (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
-                           mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize);
+void saveFinalResults() {
+  String fullPath = dataPath("typing_performance.txt");
+  PrintWriter output;
 
-  // Toggle case each time mouse enters the area
-  if (mouseOverToggle && !hasEnteredToggleArea) {
-    isUpperCase = !isUpperCase;  // Toggle the case
-    hasEnteredToggleArea = true;
-  } else if (!mouseOverToggle) {
-    hasEnteredToggleArea = false;  // Reset the flag when mouse leaves
+  try {
+    File file = new File(fullPath);
+    file.getParentFile().mkdirs();
+    FileWriter fw = new FileWriter(file, true);
+    output = new PrintWriter(fw);
+  } catch (IOException e) {
+    println("Error opening file for appending: " + e.getMessage());
+    return;
   }
+
+  TrialResult result = trialResults.get(trialResults.size() - 1);
+
+  output.println("Trial " + result.trialNumber);
+  output.println("Target   : " + result.targetText);
+  output.println("Typed    : " + result.typedText);
+  output.println("Accuracy : " + nf(result.accuracy, 0, 2) + "%");
+  output.println("WPM      : " + nf(result.wpm, 0, 2));
+  output.println("Adj WPM  : " + nf(result.awpm, 0, 2));
+  output.println("MSD      : " + result.msd);
+  output.println("Time     : " + result.timeTaken + " ms");
+  output.println("----------------------------------------");
+
+  output.flush();
+  output.close();
 }
