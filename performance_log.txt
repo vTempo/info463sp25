@@ -1,0 +1,11 @@
+Trial: 3
+Time taken: 3s
+Accuracy: 0.00%
+Words Per Minute: 32.00
+Adjusted Words Per Minute: 32.00
+Total Correct Characters: 0
+Total Incorrect Characters: 8
+Minimum String Distance: 44
+Typed Text: ucccoaal
+Target Text: THE QUICK BROWN FOX JUMPED OVER THE LAZY DOG
+---------------------------------------

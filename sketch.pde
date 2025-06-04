@@ -9,26 +9,26 @@ ArrayList<TrialResult> trialResults = new ArrayList<TrialResult>();
 
 // Target sentences for the 20 trials
 String[] targetSentences = {
-  "She packed twelve blue pens in her small bag.",
-  "Every bird sang sweet songs in the quiet dawn.",
-  "They watched clouds drift across the golden sky.",
-  "A clever mouse slipped past the sleepy cat.",
-  "Green leaves danced gently in the warm breeze.",
-  "He quickly wrote notes before the test began.",
-  "The tall man wore boots made of soft leather.",
-  "Old clocks ticked loudly in the silent room.",
-  "She smiled while sipping tea on the front porch.",
-  "We found a hidden path behind the old barn.",
-  "Sunlight streamed through cracks in the ceiling.",
-  "Dogs barked at shadows moving through the yard.",
-  "Rain tapped softly against the window glass.",
-  "Bright stars twinkled above the quiet valley.",
-  "He tied the package with ribbon and string.",
-  "A sudden breeze blew papers off the desk.",
-  "The curious child opened every single drawer.",
-  "Fresh apples fell from the heavy tree limbs.",
-  "The artist painted scenes from her memory.",
-  "They danced all night under the glowing moon."
+  "SHE PACKED TWELVE BLUE PENS IN HER SMALL BAG",
+  "EVERY BIRD SANG SWEET SONGS IN THE QUIET DAWN",
+  "THEY WATCHED CLOUDS DRIFT ACROSS THE GOLDEN SKY",
+  "A CLEVER MOUSE SLIPPED PAST THE SLEEPY CAT",
+  "GREEN LEAVES DANCED GENTLY IN THE WARM BREEZE",
+  "HE QUICKLY WROTE NOTES BEFORE THE TEST BEGAN",
+  "THE TALL MAN WORE BOOTS MADE OF SOFT LEATHER",
+  "OLD CLOCKS TICKED LOUDLY IN THE SILENT ROOM",
+  "SHE SMILED WHILE SIPPING TEA ON THE FRONT PORCH",
+  "WE FOUND A HIDDEN PATH BEHIND THE OLD BARN",
+  "SUNLIGHT STREAMED THROUGH CRACKS IN THE CEILING",
+  "DOGS BARKED AT SHADOWS MOVING THROUGH THE YARD",
+  "RAIN TAPPED SOFTLY AGAINST THE WINDOW GLASS",
+  "BRIGHT STARS TWINKLED ABOVE THE QUIET VALLEY",
+  "HE TIED THE PACKAGE WITH RIBBON AND STRING",
+  "A SUDDEN BREEZE BLEW PAPERS OFF THE DESK",
+  "THE CURIOUS CHILD OPENED EVERY SINGLE DRAWER",
+  "FRESH APPLES FELL FROM THE HEAVY TREE LIMBS",
+  "THE ARTIST PAINTED SCENES FROM HER MEMORY",
+  "THEY DANCED ALL NIGHT UNDER THE GLOWING MOON"
 };
 
 // Class to store trial results
@@ -43,7 +43,7 @@ class TrialResult {
   int correctChars;
   int incorrectChars;
   int msd;
-  
+
   TrialResult(int trial, String target, String typed, long time, float acc, float w, float aw, int correct, int incorrect, int distance) {
     trialNumber = trial;
     targetText = target;
@@ -247,7 +247,7 @@ void setup() {
   predictor = new NgramPredictor(4);
   numMistakes = 0;
   numCharTyped = 0;
-  
+
   // Initialize first trial
   targetText = targetSentences[currentTrial];
 }
@@ -317,10 +317,10 @@ void draw() {
       currentSuggestions = null;
     }
   }
-  
+
   boolean isHoveringShift = (mouseX >= caseToggleX && mouseX <= caseToggleX + caseToggleSize &&
                              mouseY >= caseToggleY && mouseY <= caseToggleY + caseToggleSize);
-  
+
   if (isHoveringShift && !hasEnteredToggleArea) {
     // Just entered hover area → toggle
     isUpperCase = !isUpperCase;
@@ -333,39 +333,39 @@ void draw() {
 
 void drawSummaryScreen() {
   background(220, 230, 255);
-  
+
   fill(0, 0, 150);
   textSize(64);
   textAlign(CENTER);
   text("Test Complete!", width/2, 80);
-  
+
   textSize(32);
   text("Summary of All 20 Trials", width/2, 130);
-  
+
   // Calculate overall statistics
   float totalAWPM = 0;
   float totalAccuracy = 0;
   int totalMSD = 0;
   long totalTime = 0;
-  
+
   for (TrialResult result : trialResults) {
     totalAWPM += result.awpm;
     totalAccuracy += result.accuracy;
     totalMSD += result.msd;
     totalTime += result.timeTaken;
   }
-  
+
   float avgAWPM = totalAWPM / trialResults.size();
   float avgAccuracy = totalAccuracy / trialResults.size();
   float avgMSD = (float)totalMSD / trialResults.size();
   float avgTime = (float)totalTime / trialResults.size();
-  
+
   // Draw overall statistics
   fill(0);
   textSize(28);
   textAlign(LEFT);
   int yPos = 200;
-  
+
   text("Overall Performance:", 100, yPos);
   yPos += 40;
   text("Average Adjusted WPM: " + nf(avgAWPM, 0, 2), 120, yPos);
@@ -375,26 +375,26 @@ void drawSummaryScreen() {
   text("Average MSD: " + nf(avgMSD, 0, 2), 120, yPos);
   yPos += 35;
   text("Average Time: " + nf(avgTime/1000.0, 0, 2) + "s", 120, yPos);
-  
+
   // Draw trial-by-trial results
   yPos += 60;
   textSize(24);
   text("Trial Results:", 100, yPos);
   yPos += 30;
-  
+
   textSize(18);
   for (int i = 0; i < min(trialResults.size(), 10); i++) {
     TrialResult result = trialResults.get(i);
-    String trialLine = "Trial " + (i+1) + ": AWPM=" + nf(result.awpm, 0, 1) + 
+    String trialLine = "Trial " + (i+1) + ": AWPM=" + nf(result.awpm, 0, 1) +
                       ", Acc=" + nf(result.accuracy, 0, 1) + "%, MSD=" + result.msd;
     text(trialLine, 120, yPos);
     yPos += 25;
   }
-  
+
   if (trialResults.size() > 10) {
     text("... and " + (trialResults.size() - 10) + " more trials", 120, yPos);
   }
-  
+
   // Instructions to restart
   fill(100, 0, 0);
   textSize(24);
@@ -665,7 +665,7 @@ void mousePressed() {
 
 void moveToNextTrial() {
   currentTrial++;
-  
+
   if (currentTrial >= totalTrials) {
     testComplete = true;
     saveFinalResults();
