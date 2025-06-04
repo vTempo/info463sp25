@@ -203,7 +203,7 @@ int suggestionSpacing = 20;
 float suggestionKeySizeHoverFactor = 1.5;
 
 // Case toggle variables
-boolean isUpperCase = false;
+boolean isUpperCase = true;
 boolean hasEnteredToggleArea = false;
 int caseToggleX = 1400;
 int caseToggleY = 550;
