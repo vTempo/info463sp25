@@ -273,6 +273,8 @@ void draw() {
 
   fill(0);
   textAlign(LEFT);
+  String cursorChar = (millis() / 500) % 2 == 0 ? "|" : " ";
+  text("Typed: " + typedText + cursorChar, 100, 140);
   text("Typed: " + typedText, 100, 140);
 
   // Draw keyboard
